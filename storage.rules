@@ -1,0 +1,20 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
+    // Allow public read access to all files.
+    match /{allPaths=**} {
+      allow read: if true;
+    }
+
+    // Restrict write access to the 'products' folder to admins only.
+    match /products/{productId}/{imageName} {
+      allow write: if isAdmin();
+    }
+  }
+}

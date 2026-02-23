@@ -3,13 +3,14 @@
 import { ProductCard } from '@/components/product/product-card';
 import { useCollection } from '@/firebase';
 import { useFirestore } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { Product } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Home() {
   const firestore = useFirestore();
-  const productsQuery = firestore ? collection(firestore, 'products') : null;
+  const productsRef = firestore ? collection(firestore, 'products') : null;
+  const productsQuery = productsRef ? query(productsRef, where('status', '==', 'active')) : null;
   const { data: products, loading } = useCollection<Product>(productsQuery);
 
   return (

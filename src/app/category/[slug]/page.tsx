@@ -2,7 +2,7 @@
 import { ProductCard } from '@/components/product/product-card';
 import { useCollection } from '@/firebase';
 import { useFirestore } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { Product } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMemo } from 'react';
@@ -10,19 +10,18 @@ import { notFound } from 'next/navigation';
 
 export default function CategoryPage({ params }: { params: { slug: string } }) {
   const firestore = useFirestore();
-  const productsQuery = firestore ? collection(firestore, 'products') : null;
-  const { data: products, loading } = useCollection<Product>(productsQuery);
+  const productsRef = firestore ? collection(firestore, 'products') : null;
+  const productsQuery = productsRef 
+    ? query(
+        productsRef, 
+        where('status', '==', 'active'),
+        where('category', '==', params.slug.charAt(0).toUpperCase() + params.slug.slice(1))
+      ) 
+    : null;
+  
+  const { data: categoryProducts, loading } = useCollection<Product>(productsQuery);
 
-  const { categoryProducts, categoryName } = useMemo(() => {
-    if (!products) return { categoryProducts: [], categoryName: '' };
-    
-    const filtered = products.filter(
-      (p) => p.category.toLowerCase() === params.slug
-    );
-    const name = filtered.length > 0 ? filtered[0].category : params.slug.charAt(0).toUpperCase() + params.slug.slice(1);
-
-    return { categoryProducts: filtered, categoryName: name };
-  }, [products, params.slug]);
+  const categoryName = params.slug.charAt(0).toUpperCase() + params.slug.slice(1);
 
   if (loading) {
     return (
@@ -48,13 +47,10 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
     );
   }
 
-  if (!loading && products && categoryProducts.length === 0) {
-      // a check to see if the category is valid at all.
-      const allCategories = [...new Set(products.map(p => p.category.toLowerCase()))];
-      if(!allCategories.includes(params.slug)) {
-          notFound();
-      }
-  }
+  // Since we query by category, if we have a result, we know the category exists.
+  // If loading is done and there are no products, we can show the empty state.
+  // A 404 would be better if the category itself is invalid, which requires fetching all categories.
+  // For now, we'll just show an empty page which is also a valid state.
   
   return (
     <div>
@@ -70,7 +66,7 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
       </section>
       
       <div className="container mx-auto px-4 md:px-6 py-12">
-        {categoryProducts.length > 0 ? (
+        {categoryProducts && categoryProducts.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
             {categoryProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />

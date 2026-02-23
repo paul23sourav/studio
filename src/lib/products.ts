@@ -1,15 +1,16 @@
 // This file contains the product data that can be used to seed the Firestore database.
 import type { Product } from '@/lib/types';
 
-export const products: Product[] = [
+export const products: Omit<Product, 'id'>[] = [
   {
-    id: 'classic-leather-tote',
     name: 'Classic Leather Tote',
     description: 'A timeless tote bag crafted from genuine full-grain leather. Spacious enough for your daily essentials, including a 13-inch laptop. Features an interior zip pocket and a magnetic closure.',
     category: 'Bags',
     material: 'Leather',
     color: 'Brown',
     price: 89.82,
+    stock: 50,
+    status: 'active',
     imageUrls: [
       'https://images.unsplash.com/photo-1594223274502-94212534f379?q=80&w=1000&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1584917865922-de9141f02883?q=80&w=1000&auto=format&fit=crop',
@@ -21,13 +22,14 @@ export const products: Product[] = [
     care: ['Wipe clean with a damp cloth.', 'Use a leather conditioner periodically.'],
   },
   {
-    id: 'city-slicker-umbrella',
     name: 'City-Slicker Umbrella',
     description: 'Stay dry in style with this compact and durable travel umbrella. Features a wind-resistant frame and an automatic open/close mechanism for easy one-handed operation.',
     category: 'Umbrellas',
     material: 'Pongee Fabric',
     color: 'Charcoal',
     price: 45.0,
+    stock: 100,
+    status: 'active',
     imageUrls: [
       'https://images.unsplash.com/photo-1580216646274-5a68c5b967f7?q=80&w=1000&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1533728334493-54b8da063f27?q=80&w=1000&auto=format&fit=crop',
@@ -37,13 +39,14 @@ export const products: Product[] = [
     sizes: ['One Size'],
   },
   {
-    id: 'minimalist-cardholder',
     name: 'Minimalist Cardholder',
     description: 'A slim and sleek cardholder for the modern minimalist. Made from premium Italian leather, it features four card slots and a central compartment for folded bills.',
     category: 'Accessories',
     material: 'Leather',
     color: 'Tan',
     price: 75.0,
+    stock: 75,
+    status: 'active',
     imageUrls: [
       'https://images.unsplash.com/photo-1601211024036-e4909163c4f7?q=80&w=1000&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1563435670-3d5f36b6f562?q=80&w=1000&auto=format&fit=crop',
@@ -52,13 +55,14 @@ export const products: Product[] = [
     imageHints: ['leather cardholder', 'wallet', 'minimalist accessory'],
   },
   {
-    id: 'merino-wool-scarf',
     name: 'Merino Wool Scarf',
     description: 'Wrap yourself in luxury with this ultra-soft scarf made from 100% merino wool. Its generous size allows for versatile styling, providing both warmth and elegance.',
     category: 'Apparel',
     material: 'Wool',
     color: 'Heather Grey',
     price: 120.0,
+    stock: 40,
+    status: 'active',
     imageUrls: [
       'https://images.unsplash.com/photo-1542489564-6e16279e6471?q=80&w=1000&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1615467827599-3d5f3ddd3a83?q=80&w=1000&auto=format&fit=crop',
@@ -69,13 +73,14 @@ export const products: Product[] = [
     care: ['Dry clean only.'],
   },
   {
-    id: 'canvas-weekender-bag',
     name: 'Canvas Weekender Bag',
     description: 'The perfect companion for your short getaways. This durable canvas bag is accented with leather details and features a detachable shoulder strap and multiple pockets for organization.',
     category: 'Bags',
     material: 'Canvas',
     color: 'Olive Green',
     price: 180.0,
+    stock: 25,
+    status: 'active',
     imageUrls: [
       'https://images.unsplash.com/photo-1587397845943-167de477e38a?q=80&w=1000&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1566150905458-1bf1b2e20d5e?q=80&w=1000&auto=format&fit=crop',
@@ -85,13 +90,14 @@ export const products: Product[] = [
     sizes: ['One Size'],
   },
   {
-    id: 'cashmere-beanie',
     name: 'Cashmere Beanie',
     description: 'A luxuriously soft and warm beanie knitted from pure cashmere. The ribbed cuff ensures a snug and comfortable fit, making it a winter essential.',
     category: 'Apparel',
     material: 'Cashmere',
     color: 'Navy',
     price: 95.0,
+    stock: 60,
+    status: 'active',
     imageUrls: [
       'https://images.unsplash.com/photo-1594488542232-358f29c62c35?q=80&w=1000&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1614055990263-e380585a97f2?q=80&w=1000&auto=format&fit=crop',
@@ -100,13 +106,14 @@ export const products: Product[] = [
     imageHints: ['cashmere beanie', 'blue hat', 'winter hat'],
   },
   {
-    id: 'the-aviator-sunglasses',
     name: 'The Aviator Sunglasses',
     description: 'Classic aviator sunglasses with a modern twist. Featuring a lightweight metal frame and polarized lenses that provide 100% UV protection.',
     category: 'Accessories',
     material: 'Metal',
     color: 'Gold',
     price: 150.0,
+    stock: 80,
+    status: 'active',
     imageUrls: [
       'https://images.unsplash.com/photo-1511499767150-a48a237f0083?q=80&w=1000&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1577803645773-f92f255379a7?q=80&w=1000&auto=format&fit=crop',
@@ -115,13 +122,14 @@ export const products: Product[] = [
     imageHints: ['aviator sunglasses', 'gold sunglasses', 'eyewear'],
   },
   {
-    id: 'storm-proof-golf-umbrella',
     name: 'Storm-Proof Golf Umbrella',
     description: 'A large, vented golf umbrella designed to withstand strong winds. The double-canopy design and fiberglass frame offer superior durability on and off the course.',
     category: 'Umbrellas',
     material: 'Nylon',
     color: 'Black',
     price: 65.0,
+    stock: 30,
+    status: 'active',
     imageUrls: [
       'https://images.unsplash.com/photo-1549443224-87a175003635?q=80&w=1000&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1525287739958-9a38528f8f55?q=80&w=1000&auto=format&fit=crop',
@@ -130,13 +138,14 @@ export const products: Product[] = [
     imageHints: ['golf umbrella', 'large umbrella', 'black umbrella'],
   },
   {
-    id: 'suede-belt',
     name: 'Suede Belt',
     description: 'A versatile belt crafted from soft, genuine suede. The brushed silver buckle adds a touch of understated sophistication to both casual and formal outfits.',
     category: 'Accessories',
     material: 'Suede',
     color: 'Chocolate Brown',
     price: 85.0,
+    stock: 90,
+    status: 'active',
     imageUrls: [
       'https://images.unsplash.com/photo-1621261159851-a2b85d99619a?q=80&w=1000&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1524391163456-c56c20f5008b?q=80&w=1000&auto=format&fit=crop',
@@ -146,13 +155,14 @@ export const products: Product[] = [
     sizes: ['30', '32', '34', '36', '38'],
   },
   {
-    id: 'nylon-backpack',
     name: 'Nylon Backpack',
     description: 'A lightweight and water-resistant backpack designed for the urban commuter. It includes a padded laptop sleeve and multiple organizational pockets.',
     category: 'Bags',
     material: 'Nylon',
     color: 'Black',
     price: 130.0,
+    stock: 45,
+    status: 'active',
     imageUrls: [
       'https://images.unsplash.com/photo-1553062407-98eeb6e0e5c8?q=80&w=1000&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1577733975221-87504143a579?q=80&w=1000&auto=format&fit=crop',

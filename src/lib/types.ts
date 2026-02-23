@@ -6,6 +6,8 @@ export type Product = {
   material: string;
   color: string;
   price: number;
+  stock: number;
+  status: 'active' | 'draft';
   imageUrls: string[];
   imageHints: string[];
   sizes?: string[];

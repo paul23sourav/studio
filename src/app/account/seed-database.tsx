@@ -3,12 +3,13 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useFirestore } from "@/firebase";
-import { products } from "@/lib/products";
+import { products as productData } from "@/lib/products";
 import { collection, doc, writeBatch } from "firebase/firestore";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
+import { v4 as uuidv4 } from 'uuid';
 
 export function SeedDatabase() {
     const firestore = useFirestore();
@@ -29,7 +30,13 @@ export function SeedDatabase() {
         const batch = writeBatch(firestore);
         const productsCollection = collection(firestore, "products");
 
-        products.forEach((product) => {
+        const productsWithIds = productData.map(product => ({
+            ...product,
+            id: `${product.name.toLowerCase().replace(/\s+/g, '-')}-${uuidv4().split('-')[0]}`,
+        }));
+
+
+        productsWithIds.forEach((product) => {
             const docRef = doc(productsCollection, product.id);
             batch.set(docRef, product);
         });
@@ -38,16 +45,22 @@ export function SeedDatabase() {
             .then(() => {
                 toast({
                     title: "Database seeded!",
-                    description: `${products.length} products have been added.`,
+                    description: `${productsWithIds.length} products have been added.`,
                 });
             })
             .catch((serverError) => {
+                console.error("Seed error", serverError);
                 const permissionError = new FirestorePermissionError({
                     path: '/products',
                     operation: 'write',
-                    requestResourceData: { note: `Batch write for ${products.length} products.` },
+                    requestResourceData: { note: `Batch write for ${productsWithIds.length} products.` },
                 });
                 errorEmitter.emit('permission-error', permissionError);
+                 toast({
+                    variant: "destructive",
+                    title: "Permission Denied",
+                    description: "You must be an admin to seed the database. See console for details.",
+                });
             })
             .finally(() => {
                 setLoading(false);
@@ -59,7 +72,7 @@ export function SeedDatabase() {
             <CardHeader>
                 <CardTitle>Developer Tools</CardTitle>
                 <CardDescription>
-                    Seed your Firestore database with product data. This will overwrite any existing products with the same ID.
+                    Seed your Firestore database with product data. This will overwrite any existing products with the same ID. This action requires admin privileges.
                 </CardDescription>
             </CardHeader>
             <CardContent>

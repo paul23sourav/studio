@@ -62,6 +62,15 @@
           "type": "number",
           "description": "Price in USD."
         },
+        "stock": {
+          "type": "number",
+          "description": "Number of items in stock."
+        },
+        "status": {
+          "type": "string",
+          "description": "The status of the product.",
+          "enum": ["active", "draft"]
+        },
         "imageUrls": {
           "type": "array",
           "items": {
@@ -94,6 +103,8 @@
         "description",
         "category",
         "price",
+        "stock",
+        "status",
         "imageUrls"
       ]
     }

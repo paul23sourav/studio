@@ -6,6 +6,7 @@ import {
   ShoppingCart,
   User,
   ChevronDown,
+  Shield,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,19 +26,22 @@ import React, { useMemo } from 'react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useUser, useAuth, useFirestore, useCollection } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { collection } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { Product } from '@/lib/types';
+import { useAdminAuth } from '@/hooks/use-admin-auth';
 
 
 export function Header() {
   const { itemCount } = useCart();
   const [isScrolled, setIsScrolled] = React.useState(false);
   const { user } = useUser();
+  const { isAdmin } = useAdminAuth();
   const auth = useAuth();
   const router = useRouter();
 
   const firestore = useFirestore();
-  const productsQuery = firestore ? collection(firestore, 'products') : null;
+  const productsRef = firestore ? collection(firestore, 'products') : null;
+  const productsQuery = productsRef ? query(productsRef, where('status', '==', 'active')) : null;
   const { data: products } = useCollection<Product>(productsQuery);
 
   const categories = useMemo(() => {
@@ -100,13 +104,11 @@ export function Header() {
           </SheetTrigger>
           <SheetContent side="left">
             <SheetHeader className="text-left">
-              <SheetTitle>
                 <Link href="/" className="flex items-center gap-2 text-lg font-semibold">
                   <PaulLogo />
                 </Link>
-              </SheetTitle>
             </SheetHeader>
-            <nav className="grid gap-6 text-lg font-medium">
+            <nav className="grid gap-6 text-lg font-medium mt-6">
               <Link href="/" className="text-muted-foreground hover:text-foreground">
                 Shop
               </Link>
@@ -152,6 +154,17 @@ export function Header() {
                 <>
                   <DropdownMenuItem asChild><Link href="/account">Profile</Link></DropdownMenuItem>
                   <DropdownMenuItem asChild><Link href="/account/orders">Orders</Link></DropdownMenuItem>
+                  {isAdmin && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin">
+                            <Shield className="mr-2 h-4 w-4" />
+                            <span>Admin Panel</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
                 </>

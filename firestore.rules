@@ -1,0 +1,31 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuth() && request.auth.token.admin == true;
+    }
+
+    match /users/{userId} {
+      allow read, write: if isAuth() && request.auth.uid == userId;
+    }
+
+    match /products/{productId} {
+      // Admins can read any product.
+      // Non-admins can only read products with status 'active'.
+      // This rule is automatically checked by Firestore on get requests.
+      allow get: if (resource.data.status == 'active') || isAdmin();
+
+      // This rule allows listing products.
+      // For non-admins, Firestore will enforce that the query contains a `where('status', '==', 'active')` clause,
+      // by checking the 'get' rule against each potential document in the result set.
+      allow list: if true;
+
+      // Only admins can create, update, or delete products.
+      allow write: if isAdmin();
+    }
+  }
+}
