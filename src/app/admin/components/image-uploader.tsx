@@ -22,7 +22,6 @@ export default function ImageUploader({ existingImageUrls = [], onImageUrlsChang
   const [uploadProgress, setUploadProgress] = useState(0);
 
   const handleRemoveImage = (urlToRemove: string) => {
-    // Note: This only removes from the UI state. Deleting from storage is handled when the product is saved/deleted.
     const newUrls = existingImageUrls.filter(url => url !== urlToRemove);
     onImageUrlsChange(newUrls);
   };
@@ -33,7 +32,7 @@ export default function ImageUploader({ existingImageUrls = [], onImageUrlsChang
     setUploading(true);
     setUploadProgress(0);
     
-    const progresses: { [key: string]: number } = {};
+    const progresses: { [key: number]: number } = {};
     const totalFiles = acceptedFiles.length;
 
     const updateOverallProgress = () => {
@@ -42,16 +41,16 @@ export default function ImageUploader({ existingImageUrls = [], onImageUrlsChang
         setUploadProgress(overallPercentage);
     };
 
-    const uploadPromises = acceptedFiles.map(file => {
+    const uploadPromises = acceptedFiles.map((file, index) => {
         const uniqueId = uuidv4();
         const fileExtension = file.name.split('.').pop();
         const fileName = `${uniqueId}.${fileExtension}`;
         const filePath = `products/${fileName}`;
 
-        progresses[file.name] = 0;
+        progresses[index] = 0;
 
         return uploadFile(file, filePath, (p) => {
-            progresses[file.name] = p;
+            progresses[index] = p;
             updateOverallProgress();
         });
     });
@@ -98,7 +97,10 @@ export default function ImageUploader({ existingImageUrls = [], onImageUrlsChang
       
       {uploading && (
         <div className="space-y-2">
-            <Label>Uploading...</Label>
+            <div className="flex justify-between items-center">
+              <Label>Uploading...</Label>
+              <span className="text-sm text-muted-foreground">{Math.round(uploadProgress)}%</span>
+            </div>
             <Progress value={uploadProgress} />
         </div>
       )}
