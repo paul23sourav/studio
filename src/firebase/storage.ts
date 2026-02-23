@@ -1,21 +1,19 @@
 'use client';
 
 import { 
-    getStorage, 
     ref, 
     uploadBytesResumable, 
-    getDownloadURL
+    getDownloadURL,
+    Storage
 } from 'firebase/storage';
-import { getApp } from 'firebase/app';
 
 // This function is designed to run on the client.
 export async function uploadFile(
+  storage: Storage,
   file: File,
   path: string,
   onProgress: (progress: number) => void
 ): Promise<string> {
-  const app = getApp();
-  const storage = getStorage(app);
   const storageRef = ref(storage, path);
   const uploadTask = uploadBytesResumable(storageRef, file);
 

@@ -7,6 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { X, UploadCloud } from 'lucide-react';
 import Image from 'next/image';
 import { v4 as uuidv4 } from 'uuid';
+import { useStorage } from '@/firebase';
 import { uploadFile } from '@/firebase/storage';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
@@ -18,6 +19,7 @@ interface ImageUploaderProps {
 
 export default function ImageUploader({ existingImageUrls = [], onImageUrlsChange }: ImageUploaderProps) {
   const { toast } = useToast();
+  const storage = useStorage();
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
@@ -29,10 +31,19 @@ export default function ImageUploader({ existingImageUrls = [], onImageUrlsChang
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) return;
     
+    if (!storage) {
+      toast({
+          variant: 'destructive',
+          title: 'Storage not available',
+          description: 'Firebase Storage is not configured correctly.',
+      });
+      return;
+    }
+
     setUploading(true);
     setUploadProgress(0);
     
-    const progresses: { [key: number]: number } = {};
+    const progresses: { [key: string]: number } = {};
     const totalFiles = acceptedFiles.length;
 
     const updateOverallProgress = () => {
@@ -41,16 +52,16 @@ export default function ImageUploader({ existingImageUrls = [], onImageUrlsChang
         setUploadProgress(overallPercentage);
     };
 
-    const uploadPromises = acceptedFiles.map((file, index) => {
+    const uploadPromises = acceptedFiles.map((file) => {
         const uniqueId = uuidv4();
         const fileExtension = file.name.split('.').pop();
         const fileName = `${uniqueId}.${fileExtension}`;
         const filePath = `products/${fileName}`;
 
-        progresses[index] = 0;
+        progresses[fileName] = 0;
 
-        return uploadFile(file, filePath, (p) => {
-            progresses[index] = p;
+        return uploadFile(storage, file, filePath, (p) => {
+            progresses[fileName] = p;
             updateOverallProgress();
         });
     });
@@ -72,7 +83,7 @@ export default function ImageUploader({ existingImageUrls = [], onImageUrlsChang
     } finally {
         setUploading(false);
     }
-  }, [existingImageUrls, onImageUrlsChange, toast]);
+  }, [storage, existingImageUrls, onImageUrlsChange, toast]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
     onDrop,
