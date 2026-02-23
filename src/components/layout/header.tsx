@@ -24,12 +24,24 @@ import { cn } from '@/lib/utils';
 import React from 'react';
 import { products } from '@/lib/products';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { useUser, useAuth } from '@/firebase';
+import { useRouter } from 'next/navigation';
 
 const categories = [...new Set(products.map((p) => p.category))];
 
 export function Header() {
   const { itemCount } = useCart();
   const [isScrolled, setIsScrolled] = React.useState(false);
+  const { user } = useUser();
+  const auth = useAuth();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    if (auth) {
+      await auth.signOut();
+      router.push('/');
+    }
+  };
 
   React.useEffect(() => {
     const handleScroll = () => {
@@ -123,11 +135,19 @@ export function Header() {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild><Link href="/account">Profile</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild><Link href="/account/orders">Orders</Link></DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild><Link href="/login">Login</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild><Link href="/signup">Sign up</Link></DropdownMenuItem>
+              {user ? (
+                <>
+                  <DropdownMenuItem asChild><Link href="/account">Profile</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild><Link href="/account/orders">Orders</Link></DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
+                </>
+              ) : (
+                <>
+                  <DropdownMenuItem asChild><Link href="/login">Login</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild><Link href="/signup">Sign up</Link></DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
 
