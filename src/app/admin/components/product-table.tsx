@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useCollection, useFirestore } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
 import { Product } from '@/lib/types';
@@ -79,7 +79,10 @@ function ProductTableSkeleton() {
 
 export default function ProductTable() {
   const firestore = useFirestore();
-  const productsQuery = firestore ? query(collection(firestore, 'products')) : null;
+  const productsQuery = useMemo(() => 
+    firestore ? query(collection(firestore, 'products')) : null, 
+    [firestore]
+  );
   const { data: products, loading } = useCollection<Product>(productsQuery);
   const { formatCurrency } = useCurrency();
   const { toast } = useToast();

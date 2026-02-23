@@ -10,18 +10,22 @@ import { notFound } from 'next/navigation';
 
 export default function CategoryPage({ params }: { params: { slug: string } }) {
   const firestore = useFirestore();
-  const productsRef = firestore ? collection(firestore, 'products') : null;
-  const productsQuery = productsRef 
-    ? query(
+  const categoryName = useMemo(() => 
+    params.slug.charAt(0).toUpperCase() + params.slug.slice(1), 
+    [params.slug]
+  );
+
+  const productsQuery = useMemo(() => {
+    if (!firestore) return null;
+    const productsRef = collection(firestore, 'products');
+    return query(
         productsRef, 
         where('status', '==', 'active'),
-        where('category', '==', params.slug.charAt(0).toUpperCase() + params.slug.slice(1))
-      ) 
-    : null;
+        where('category', '==', categoryName)
+      );
+  }, [firestore, categoryName]);
   
   const { data: categoryProducts, loading } = useCollection<Product>(productsQuery);
-
-  const categoryName = params.slug.charAt(0).toUpperCase() + params.slug.slice(1);
 
   if (loading) {
     return (

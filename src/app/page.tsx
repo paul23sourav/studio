@@ -6,11 +6,16 @@ import { useFirestore } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import { Product } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useMemo } from 'react';
 
 export default function Home() {
   const firestore = useFirestore();
-  const productsRef = firestore ? collection(firestore, 'products') : null;
-  const productsQuery = productsRef ? query(productsRef, where('status', '==', 'active')) : null;
+  const productsQuery = useMemo(() => {
+    if (!firestore) return null;
+    const productsRef = collection(firestore, 'products');
+    return query(productsRef, where('status', '==', 'active'));
+  }, [firestore]);
+
   const { data: products, loading } = useCollection<Product>(productsQuery);
 
   return (

@@ -18,10 +18,14 @@ import {
 import { useCurrency } from '@/context/currency-context';
 import { Product } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useMemo } from 'react';
 
 export default function ProductDetailPage({ params }: { params: { productId: string } }) {
   const firestore = useFirestore();
-  const productRef = firestore ? doc(firestore, 'products', params.productId) : null;
+  const productRef = useMemo(() => 
+    firestore ? doc(firestore, 'products', params.productId) : null,
+    [firestore, params.productId]
+  );
   const { data: product, loading } = useDoc<Product>(productRef);
   const { formatCurrency } = useCurrency();
 

@@ -17,7 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { PaulLogo } from '@/components/icons';
 import { useCart } from '@/context/cart-context';
 import { CartSheet } from '@/components/cart/cart-sheet';
@@ -40,8 +40,11 @@ export function Header() {
   const router = useRouter();
 
   const firestore = useFirestore();
-  const productsRef = firestore ? collection(firestore, 'products') : null;
-  const productsQuery = productsRef ? query(productsRef, where('status', '==', 'active')) : null;
+  const productsQuery = useMemo(() => {
+    if (!firestore) return null;
+    const productsRef = collection(firestore, 'products');
+    return query(productsRef, where('status', '==', 'active'));
+  }, [firestore]);
   const { data: products } = useCollection<Product>(productsQuery);
 
   const categories = useMemo(() => {

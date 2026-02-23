@@ -5,6 +5,7 @@ import { doc } from 'firebase/firestore';
 import ProductForm from '../../../components/product-form';
 import { Product } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useMemo } from 'react';
 
 function EditProductLoading() {
     return (
@@ -30,7 +31,10 @@ function EditProductLoading() {
 
 export default function EditProductPage({ params }: { params: { productId: string } }) {
   const firestore = useFirestore();
-  const productRef = firestore ? doc(firestore, 'products', params.productId) : null;
+  const productRef = useMemo(() => 
+    firestore ? doc(firestore, 'products', params.productId) : null,
+    [firestore, params.productId]
+  );
   const { data: product, loading } = useDoc<Product>(productRef);
   
   if (loading) {
