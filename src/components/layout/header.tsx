@@ -107,6 +107,11 @@ export function Header() {
             </nav>
           </SheetContent>
         </Sheet>
+        <div className="flex-1 text-center md:hidden">
+            <Link href="/" className="inline-flex items-center">
+                <PaulLogo />
+            </Link>
+        </div>
         <div className="ml-auto flex items-center gap-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
