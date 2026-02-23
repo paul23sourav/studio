@@ -15,6 +15,8 @@ const FirebaseAuth = () => {
   const router = useRouter();
   const elementRef = useRef(null);
   const [firebaseui, setFirebaseui] = useState<typeof import('firebaseui') | null>(null);
+  const [ui, setUi] = useState<import('firebaseui').auth.AuthUI | null>(null);
+
 
   useEffect(() => {
     import('firebaseui').then(firebaseui => {
@@ -25,10 +27,12 @@ const FirebaseAuth = () => {
   useEffect(() => {
     if (!firebaseui || !auth) return;
 
-    const ui = firebaseui.auth.AuthUI.getInstance() || new firebaseui.auth.AuthUI(auth);
-
+    // Do not use getInstance which can be stale.
+    const newUi = new firebaseui.auth.AuthUI(auth);
+    setUi(newUi);
+    
     if (elementRef.current) {
-      ui.start(elementRef.current, {
+      newUi.start(elementRef.current, {
         signInSuccessUrl: '/',
         signInOptions: [
           GoogleAuthProvider.PROVIDER_ID,
@@ -48,7 +52,7 @@ const FirebaseAuth = () => {
     }
     
     return () => {
-      ui.reset();
+      newUi.delete();
     };
   }, [firebaseui, auth, router]);
 
