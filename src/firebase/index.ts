@@ -5,7 +5,8 @@ import { getAuth, Auth } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { firebaseConfig } from './config';
 
-export { FirebaseProvider, FirebaseClientProvider, useFirebase, useFirebaseApp, useAuth, useFirestore } from './provider';
+export { FirebaseProvider, useFirebase, useFirebaseApp, useAuth, useFirestore } from './provider';
+export { FirebaseClientProvider } from './client-provider';
 export { useUser } from './auth/use-user';
 
 let app: FirebaseApp;
