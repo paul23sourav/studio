@@ -9,7 +9,6 @@ import {
 import { useAuth, useFirestore } from '@/firebase';
 import 'firebaseui/dist/firebaseui.css';
 import { useRouter } from 'next/navigation';
-import type { auth as authui } from 'firebaseui';
 import { doc, setDoc } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -19,23 +18,17 @@ const FirebaseAuth = () => {
   const firestore = useFirestore();
   const router = useRouter();
   const elementRef = useRef<HTMLDivElement>(null);
-  const uiRef = useRef<authui.AuthUI | null>(null);
 
   useEffect(() => {
     if (!auth || !firestore) return;
 
-    // Using a variable to track mounted state is good for async operations in useEffect
     let isMounted = true; 
-
+    // Dynamically import firebaseui to avoid server-side rendering issues
     import('firebaseui').then(firebaseui => {
       if (!isMounted || !auth) return;
-
-      // Get or create the AuthUI instance.
-      // This will be cleaned up in the return function of useEffect.
-      const ui = uiRef.current || new firebaseui.auth.AuthUI(auth);
-      if (!uiRef.current) {
-        uiRef.current = ui;
-      }
+      
+      // Get or create the AuthUI instance using the official singleton method
+      const ui = firebaseui.auth.AuthUI.getInstance() || new firebaseui.auth.AuthUI(auth);
       
       if (elementRef.current) {
         ui.start(elementRef.current, {
@@ -86,15 +79,20 @@ const FirebaseAuth = () => {
 
     return () => {
       isMounted = false;
-      if (uiRef.current) {
-        try {
-            uiRef.current.delete();
-        } catch (e) {
+      // Also use dynamic import for cleanup to match the setup
+      import('firebaseui').then(firebaseui => {
+        const ui = firebaseui.auth.AuthUI.getInstance();
+        if (ui) {
+          try {
+            ui.delete();
+          } catch (e) {
             console.error('Error deleting FirebaseUI instance', e);
-        } finally {
-            uiRef.current = null;
+          }
         }
-      }
+      }).catch(e => {
+        // Handle potential error with importing firebaseui during unmount
+        console.error('Error importing firebaseui for cleanup', e);
+      });
     };
     // We depend on auth and firestore from context, and router for navigation.
   }, [auth, firestore, router]);
