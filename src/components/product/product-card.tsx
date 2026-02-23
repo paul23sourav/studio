@@ -1,9 +1,14 @@
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
 import type { Product } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
+import { useCurrency } from '@/context/currency-context';
 
 export function ProductCard({ product }: { product: Product }) {
+  const { formatCurrency } = useCurrency();
+
   return (
     <Link href={`/${product.id}`}>
       <Card className="overflow-hidden transition-all hover:shadow-lg">
@@ -20,7 +25,7 @@ export function ProductCard({ product }: { product: Product }) {
           </div>
           <div className="p-4">
             <h3 className="font-semibold text-lg">{product.name}</h3>
-            <p className="text-muted-foreground mt-1">${product.price.toFixed(2)}</p>
+            <p className="text-muted-foreground mt-1">{formatCurrency(product.price)}</p>
           </div>
         </CardContent>
       </Card>

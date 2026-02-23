@@ -1,3 +1,5 @@
+'use client';
+
 import { Badge } from "@/components/ui/badge"
 import {
   Card,
@@ -14,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { useCurrency } from "@/context/currency-context";
 
 const orders = [
     {
@@ -43,6 +46,7 @@ const orders = [
 ]
 
 export default function OrderHistoryPage() {
+  const { formatCurrency } = useCurrency();
   return (
     <Card>
       <CardHeader>
@@ -69,7 +73,7 @@ export default function OrderHistoryPage() {
                     <TableCell>
                         <Badge variant={order.status === "Delivered" ? "default" : "secondary"}>{order.status}</Badge>
                     </TableCell>
-                    <TableCell className="text-right">${order.total.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(order.total)}</TableCell>
                 </TableRow>
             ))}
           </TableBody>

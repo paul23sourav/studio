@@ -6,9 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
+import { useCurrency } from "@/context/currency-context";
 
 export default function CheckoutPage() {
   const { cartItems, cartTotal, itemCount } = useCart();
+  const { formatCurrency } = useCurrency();
 
   if (itemCount === 0) {
     return (
@@ -18,6 +20,9 @@ export default function CheckoutPage() {
         </div>
     )
   }
+
+  const shippingCost = 5; // in USD
+  const taxRate = 0.08;
 
   return (
     <div className="container mx-auto px-4 md:px-6 py-12">
@@ -94,26 +99,26 @@ export default function CheckoutPage() {
                                 <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
                             </div>
                         </div>
-                        <p className="font-semibold">${(item.price * item.quantity).toFixed(2)}</p>
+                        <p className="font-semibold">{formatCurrency(item.price * item.quantity)}</p>
                     </div>
                 ))}
               <Separator />
               <div className="flex justify-between font-semibold">
                 <span>Subtotal</span>
-                <span>${cartTotal.toFixed(2)}</span>
+                <span>{formatCurrency(cartTotal)}</span>
               </div>
               <div className="flex justify-between text-muted-foreground">
                 <span>Shipping</span>
-                <span>$5.00</span>
+                <span>{formatCurrency(shippingCost)}</span>
               </div>
               <div className="flex justify-between text-muted-foreground">
                 <span>Taxes</span>
-                <span>${(cartTotal * 0.08).toFixed(2)}</span>
+                <span>{formatCurrency(cartTotal * taxRate)}</span>
               </div>
               <Separator />
               <div className="flex justify-between text-lg font-bold">
                 <span>Total</span>
-                <span>${(cartTotal + 5 + cartTotal * 0.08).toFixed(2)}</span>
+                <span>{formatCurrency(cartTotal + shippingCost + cartTotal * taxRate)}</span>
               </div>
               <Button size="lg" className="w-full mt-4">Place Order</Button>
             </CardContent>

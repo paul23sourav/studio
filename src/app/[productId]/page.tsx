@@ -1,3 +1,5 @@
+'use client';
+
 import { products } from '@/lib/products';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
@@ -11,9 +13,11 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import { useCurrency } from '@/context/currency-context';
 
 export default function ProductDetailPage({ params }: { params: { productId: string } }) {
   const product = products.find((p) => p.id === params.productId);
+  const { formatCurrency } = useCurrency();
 
   if (!product) {
     notFound();
@@ -46,7 +50,7 @@ export default function ProductDetailPage({ params }: { params: { productId: str
         
         <div className="flex flex-col">
           <h1 className="text-3xl lg:text-4xl font-bold">{product.name}</h1>
-          <p className="text-2xl text-muted-foreground mt-2">${product.price.toFixed(2)}</p>
+          <p className="text-2xl text-muted-foreground mt-2">{formatCurrency(product.price)}</p>
           
           <p className="mt-6 text-base leading-relaxed">{product.description}</p>
           

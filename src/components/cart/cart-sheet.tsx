@@ -12,9 +12,11 @@ import { Button } from '@/components/ui/button';
 import { CartItem } from './cart-item';
 import { ScrollArea } from '../ui/scroll-area';
 import { Separator } from '../ui/separator';
+import { useCurrency } from '@/context/currency-context';
 
 export function CartSheet() {
   const { cartItems, cartTotal, itemCount } = useCart();
+  const { formatCurrency } = useCurrency();
 
   return (
     <SheetContent className="flex w-full flex-col pr-0 sm:max-w-lg">
@@ -35,7 +37,7 @@ export function CartSheet() {
           <SheetFooter className="p-6 sm:justify-between">
             <div className="text-lg font-semibold">
               <span>Subtotal: </span>
-              <span>${cartTotal.toFixed(2)}</span>
+              <span>{formatCurrency(cartTotal)}</span>
             </div>
             <Button asChild className="w-full sm:w-auto">
               <Link href="/checkout">Checkout</Link>

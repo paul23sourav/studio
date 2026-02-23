@@ -6,9 +6,11 @@ import type { CartItem as CartItemType } from '@/lib/types';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Minus, Plus, X } from 'lucide-react';
+import { useCurrency } from '@/context/currency-context';
 
 export function CartItem({ item }: { item: CartItemType }) {
   const { updateQuantity } = useCart();
+  const { formatCurrency } = useCurrency();
 
   const handleQuantityChange = (newQuantity: number) => {
     updateQuantity(item.id, newQuantity);
@@ -30,7 +32,7 @@ export function CartItem({ item }: { item: CartItemType }) {
           <div>
             <h3 className="font-semibold">{item.name}</h3>
             {item.size && <p className="text-sm text-muted-foreground">Size: {item.size}</p>}
-            <p className="text-sm text-muted-foreground">${item.price.toFixed(2)}</p>
+            <p className="text-sm text-muted-foreground">{formatCurrency(item.price)}</p>
           </div>
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleQuantityChange(0)}>
             <X className="h-4 w-4" />
