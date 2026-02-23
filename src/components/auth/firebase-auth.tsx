@@ -4,7 +4,6 @@ import { useEffect, useRef } from 'react';
 import {
   GoogleAuthProvider,
   EmailAuthProvider,
-  PhoneAuthProvider,
 } from 'firebase/auth';
 import { useAuth, useFirestore } from '@/firebase';
 import 'firebaseui/dist/firebaseui.css';
@@ -37,10 +36,6 @@ const FirebaseAuth = () => {
           signInOptions: [
             GoogleAuthProvider.PROVIDER_ID,
             EmailAuthProvider.PROVIDER_ID,
-            {
-              provider: PhoneAuthProvider.PROVIDER_ID,
-              defaultCountry: 'IN',
-            },
           ],
           callbacks: {
             signInSuccessWithAuthResult: (authResult, redirectUrl) => {
@@ -90,7 +85,7 @@ const FirebaseAuth = () => {
           }
         }
       }).catch(e => {
-        // Handle potential error with importing firebaseui during unmount
+        // Handle potential error with importing firebaseui for cleanup
         console.error('Error importing firebaseui for cleanup', e);
       });
     };
