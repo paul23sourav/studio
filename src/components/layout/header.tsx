@@ -5,6 +5,7 @@ import {
   Menu,
   ShoppingCart,
   User,
+  ChevronDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,11 +22,10 @@ import { useCart } from '@/context/cart-context';
 import { CartSheet } from '@/components/cart/cart-sheet';
 import { cn } from '@/lib/utils';
 import React from 'react';
+import { products } from '@/lib/products';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
-const mainNav = [
-  { href: '/', label: 'Shop' },
-  { href: '/account/orders', label: 'Orders' },
-];
+const categories = [...new Set(products.map((p) => p.category))];
 
 export function Header() {
   const { itemCount } = useCart();
@@ -50,11 +50,25 @@ export function Header() {
           <Link href="/" className="flex items-center gap-2 text-lg font-semibold md:text-base mr-4">
             <PaulLogo />
           </Link>
-          {mainNav.map((item) => (
-            <Link key={item.href} href={item.href} className="text-muted-foreground transition-colors hover:text-foreground">
-              {item.label}
-            </Link>
-          ))}
+          <Link href="/" className="text-muted-foreground transition-colors hover:text-foreground">
+            Shop
+          </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex items-center gap-1 text-muted-foreground transition-colors hover:text-foreground data-[state=open]:text-foreground">
+              Categories
+              <ChevronDown className="relative top-[1px] ml-1 h-3 w-3 transition-transform duration-200" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {categories.map((category) => (
+                <DropdownMenuItem key={category} asChild>
+                  <Link href={`/category/${category.toLowerCase()}`}>{category}</Link>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Link href="/account/orders" className="text-muted-foreground transition-colors hover:text-foreground">
+            Orders
+          </Link>
         </nav>
         <Sheet>
           <SheetTrigger asChild>
@@ -68,11 +82,28 @@ export function Header() {
               <Link href="/" className="flex items-center gap-2 text-lg font-semibold">
                 <PaulLogo />
               </Link>
-              {mainNav.map((item) => (
-                <Link key={item.href} href={item.href} className="text-muted-foreground hover:text-foreground">
-                  {item.label}
-                </Link>
-              ))}
+              <Link href="/" className="text-muted-foreground hover:text-foreground">
+                Shop
+              </Link>
+              <Accordion type="single" collapsible className="w-full -my-2">
+                <AccordionItem value="categories" className="border-b-0">
+                  <AccordionTrigger className="py-2 text-muted-foreground hover:text-foreground hover:no-underline">
+                    Categories
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="mt-2 flex flex-col space-y-4 pl-7">
+                      {categories.map((category) => (
+                        <Link key={category} href={`/category/${category.toLowerCase()}`} className="text-muted-foreground hover:text-foreground">
+                          {category}
+                        </Link>
+                      ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+              <Link href="/account/orders" className="text-muted-foreground hover:text-foreground">
+                Orders
+              </Link>
             </nav>
           </SheetContent>
         </Sheet>
