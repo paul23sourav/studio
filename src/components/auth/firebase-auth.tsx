@@ -39,6 +39,7 @@ const FirebaseAuth = () => {
       
       if (elementRef.current) {
         ui.start(elementRef.current, {
+          signInFlow: 'popup', // Use popup flow to avoid redirect issues
           signInSuccessUrl: '/',
           signInOptions: [
             GoogleAuthProvider.PROVIDER_ID,
@@ -80,8 +81,13 @@ const FirebaseAuth = () => {
     return () => {
       isMounted = false;
       if (uiRef.current) {
-        uiRef.current.delete();
-        uiRef.current = null;
+        try {
+            uiRef.current.delete();
+        } catch (e) {
+            console.error('Error deleting FirebaseUI instance', e);
+        } finally {
+            uiRef.current = null;
+        }
       }
     };
     // We depend on auth and firestore from context, and router for navigation.
