@@ -3,8 +3,12 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     
+    function isDevAdmin() {
+      return request.auth != null && (request.auth.token.email == 'paulspshubham94@gmail.com' || request.auth.token.email == 'paul23sourav@gmail.com');
+    }
+    
     function isAdmin() {
-      return request.auth != null && request.auth.token.admin == true;
+      return request.auth != null && (request.auth.token.admin == true || isDevAdmin());
     }
 
     // Allow public read access to all files.
