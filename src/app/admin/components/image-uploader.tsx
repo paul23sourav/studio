@@ -9,6 +9,7 @@ import Image from 'next/image';
 import { v4 as uuidv4 } from 'uuid';
 import { uploadFile } from '@/firebase/storage';
 import { useToast } from '@/hooks/use-toast';
+import { Label } from '@/components/ui/label';
 
 interface ImageUploaderProps {
   existingImageUrls?: string[];
