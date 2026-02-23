@@ -21,10 +21,9 @@ const FirebaseAuth = () => {
   useEffect(() => {
     if (!auth || !firestore) return;
 
-    let isMounted = true; 
     // Dynamically import firebaseui to avoid server-side rendering issues
     import('firebaseui').then(firebaseui => {
-      if (!isMounted || !auth) return;
+      if (!auth) return;
       
       // Get or create the AuthUI instance using the official singleton method
       const ui = firebaseui.auth.AuthUI.getInstance() || new firebaseui.auth.AuthUI(auth);
@@ -71,25 +70,9 @@ const FirebaseAuth = () => {
         });
       }
     });
-
-    return () => {
-      isMounted = false;
-      // Also use dynamic import for cleanup to match the setup
-      import('firebaseui').then(firebaseui => {
-        const ui = firebaseui.auth.AuthUI.getInstance();
-        if (ui) {
-          try {
-            ui.delete();
-          } catch (e) {
-            console.error('Error deleting FirebaseUI instance', e);
-          }
-        }
-      }).catch(e => {
-        // Handle potential error with importing firebaseui for cleanup
-        console.error('Error importing firebaseui for cleanup', e);
-      });
-    };
-    // We depend on auth and firestore from context, and router for navigation.
+    // The singleton pattern used by `AuthUI.getInstance()` handles cleanup.
+    // Explicitly calling `ui.delete()` in a useEffect cleanup can cause issues
+    // with React's Strict Mode and fast refresh. We can safely remove the cleanup.
   }, [auth, firestore, router]);
 
   return <div ref={elementRef} />;
