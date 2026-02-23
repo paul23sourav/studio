@@ -25,10 +25,85 @@
         }
       },
       "required": ["uid", "email"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Represents a product in the e-commerce store.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The product's unique ID."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the product."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of the product."
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "Bags",
+            "Umbrellas",
+            "Apparel",
+            "Accessories"
+          ]
+        },
+        "material": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string"
+        },
+        "price": {
+          "type": "number",
+          "description": "Price in USD."
+        },
+        "imageUrls": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "imageHints": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sizes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "care": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "category",
+        "price",
+        "imageUrls"
+      ]
     }
   },
   "auth": {
-    "providers": ["google.com", "password", "phone"]
+    "providers": [
+      "google.com",
+      "password",
+      "phone"
+    ]
   },
   "firestore": {
     "/users/{userId}": {
@@ -36,6 +111,12 @@
         "$ref": "#/entities/UserProfile"
       },
       "description": "Stores user profile information."
+    },
+    "/products/{productId}": {
+      "schema": {
+        "$ref": "#/entities/Product"
+      },
+      "description": "Stores product details."
     }
   }
 }

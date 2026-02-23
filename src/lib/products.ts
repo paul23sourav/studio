@@ -1,3 +1,4 @@
+// This file contains the product data that can be used to seed the Firestore database.
 import type { Product } from '@/lib/types';
 
 export const products: Product[] = [
@@ -7,10 +8,10 @@ export const products: Product[] = [
     description: 'A timeless tote bag crafted from genuine full-grain leather. Spacious enough for your daily essentials, including a 13-inch laptop. Features an interior zip pocket and a magnetic closure.',
     category: 'Bags',
     material: 'Leather',
-    color: 'Black',
-    price: 249.99,
-    imageUrls: ['https://picsum.photos/seed/1/1000/1000', 'https://picsum.photos/seed/1a/1000/1000', 'https://picsum.photos/seed/1b/1000/1000'],
-    imageHints: ['leather tote', 'black bag', 'fashion accessory'],
+    color: 'Brown',
+    price: 89.82,
+    imageUrls: ['https://picsum.photos/seed/1/1000/1000', 'https://picsum.photos/seed/newtote2/1000/1000', 'https://picsum.photos/seed/newtote3/1000/1000', 'https://picsum.photos/seed/newtote4/1000/1000'],
+    imageHints: ['leather tote', 'brown tote bag', 'women\'s handbag', 'fashion accessory'],
     sizes: ['One Size'],
     care: ['Wipe clean with a damp cloth.', 'Use a leather conditioner periodically.'],
   },

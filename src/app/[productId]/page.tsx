@@ -1,6 +1,8 @@
 'use client';
 
-import { products } from '@/lib/products';
+import { useDoc } from '@/firebase/firestore/use-doc';
+import { useFirestore } from '@/firebase';
+import { doc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -14,10 +16,39 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { useCurrency } from '@/context/currency-context';
+import { Product } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ProductDetailPage({ params }: { params: { productId: string } }) {
-  const product = products.find((p) => p.id === params.productId);
+  const firestore = useFirestore();
+  const productRef = firestore ? doc(firestore, 'products', params.productId) : null;
+  const { data: product, loading } = useDoc<Product>(productRef);
   const { formatCurrency } = useCurrency();
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 md:px-6 py-12">
+        <div className="grid md:grid-cols-2 gap-8 lg:gap-16">
+          <Skeleton className="w-full aspect-square rounded-lg" />
+          <div className="flex flex-col">
+            <Skeleton className="h-10 w-3/4" />
+            <Skeleton className="h-8 w-1/4 mt-2" />
+            <Skeleton className="h-20 w-full mt-6" />
+            <div className="mt-8">
+              <Skeleton className="h-12 w-full" />
+            </div>
+            <div className="mt-8 flex-grow space-y-4">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          </div>
+        </div>
+        <div className="mt-16 md:mt-24">
+          <Skeleton className="h-48 w-full" />
+        </div>
+      </div>
+    )
+  }
 
   if (!product) {
     notFound();
@@ -60,7 +91,7 @@ export default function ProductDetailPage({ params }: { params: { productId: str
 
           <div className="mt-8 flex-grow">
             <Accordion type="single" collapsible className="w-full">
-              {product.care && (
+              {product.care && product.care.length > 0 && (
                 <AccordionItem value="care">
                   <AccordionTrigger>Care Instructions</AccordionTrigger>
                   <AccordionContent>

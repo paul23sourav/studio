@@ -21,13 +21,13 @@ import { PaulLogo } from '@/components/icons';
 import { useCart } from '@/context/cart-context';
 import { CartSheet } from '@/components/cart/cart-sheet';
 import { cn } from '@/lib/utils';
-import React from 'react';
-import { products } from '@/lib/products';
+import React, { useMemo } from 'react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { useUser, useAuth } from '@/firebase';
+import { useUser, useAuth, useFirestore, useCollection } from '@/firebase';
 import { useRouter } from 'next/navigation';
+import { collection } from 'firebase/firestore';
+import { Product } from '@/lib/types';
 
-const categories = [...new Set(products.map((p) => p.category))];
 
 export function Header() {
   const { itemCount } = useCart();
@@ -35,6 +35,15 @@ export function Header() {
   const { user } = useUser();
   const auth = useAuth();
   const router = useRouter();
+
+  const firestore = useFirestore();
+  const productsQuery = firestore ? collection(firestore, 'products') : null;
+  const { data: products } = useCollection<Product>(productsQuery);
+
+  const categories = useMemo(() => {
+    if (!products) return [];
+    return [...new Set(products.map((p) => p.category))];
+  }, [products]);
 
   const handleLogout = async () => {
     if (auth) {
