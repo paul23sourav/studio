@@ -10,7 +10,12 @@ export const products: Product[] = [
     material: 'Leather',
     color: 'Brown',
     price: 89.82,
-    imageUrls: ['https://picsum.photos/seed/tote-1/1000/1000', 'https://picsum.photos/seed/tote-2/1000/1000', 'https://picsum.photos/seed/tote-3/1000/1000', 'https://picsum.photos/seed/tote-4/1000/1000'],
+    imageUrls: [
+      'https://images.unsplash.com/photo-1594223274502-94212534f379?q=80&w=1000&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1584917865922-de9141f02883?q=80&w=1000&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1621609764095-b32635d7dd6d?q=80&w=1000&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1584917865921-fbad90a552b7?q=80&w=1000&auto=format&fit=crop'
+    ],
     imageHints: ['leather tote', 'brown tote bag', 'women\'s handbag', 'fashion accessory'],
     sizes: ['One Size'],
     care: ['Wipe clean with a damp cloth.', 'Use a leather conditioner periodically.'],
@@ -23,7 +28,11 @@ export const products: Product[] = [
     material: 'Pongee Fabric',
     color: 'Charcoal',
     price: 45.0,
-    imageUrls: ['https://picsum.photos/seed/umbrella-1/1000/1000', 'https://picsum.photos/seed/umbrella-2/1000/1000', 'https://picsum.photos/seed/umbrella-3/1000/1000'],
+    imageUrls: [
+      'https://images.unsplash.com/photo-1580216646274-5a68c5b967f7?q=80&w=1000&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1533728334493-54b8da063f27?q=80&w=1000&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1506896294371-a8a5b5c1a742?q=80&w=1000&auto=format&fit=crop'
+    ],
     imageHints: ['black umbrella', 'open umbrella', 'rain accessory'],
     sizes: ['One Size'],
   },
@@ -35,7 +44,11 @@ export const products: Product[] = [
     material: 'Leather',
     color: 'Tan',
     price: 75.0,
-    imageUrls: ['https://picsum.photos/seed/cardholder-1/1000/1000', 'https://picsum.photos/seed/cardholder-2/1000/1000', 'https://picsum.photos/seed/cardholder-3/1000/1000'],
+    imageUrls: [
+      'https://images.unsplash.com/photo-1601211024036-e4909163c4f7?q=80&w=1000&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1563435670-3d5f36b6f562?q=80&w=1000&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1557994883-b3a758703a93?q=80&w=1000&auto=format&fit=crop'
+    ],
     imageHints: ['leather cardholder', 'wallet', 'minimalist accessory'],
   },
   {
@@ -46,7 +59,11 @@ export const products: Product[] = [
     material: 'Wool',
     color: 'Heather Grey',
     price: 120.0,
-    imageUrls: ['https://picsum.photos/seed/scarf-1/1000/1000', 'https://picsum.photos/seed/scarf-2/1000/1000', 'https://picsum.photos/seed/scarf-3/1000/1000'],
+    imageUrls: [
+      'https://images.unsplash.com/photo-1542489564-6e16279e6471?q=80&w=1000&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1615467827599-3d5f3ddd3a83?q=80&w=1000&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1519011921345-5ac5a407334b?q=80&w=1000&auto=format&fit=crop'
+    ],
     imageHints: ['wool scarf', 'grey scarf', 'winter accessory'],
     sizes: ['One Size'],
     care: ['Dry clean only.'],
@@ -59,7 +76,11 @@ export const products: Product[] = [
     material: 'Canvas',
     color: 'Olive Green',
     price: 180.0,
-    imageUrls: ['https://picsum.photos/seed/weekender-1/1000/1000', 'https://picsum.photos/seed/weekender-2/1000/1000', 'https://picsum.photos/seed/weekender-3/1000/1000'],
+    imageUrls: [
+      'https://images.unsplash.com/photo-1587397845943-167de477e38a?q=80&w=1000&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1566150905458-1bf1b2e20d5e?q=80&w=1000&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1622536843336-391d175e533e?q=80&w=1000&auto=format&fit=crop'
+    ],
     imageHints: ['canvas bag', 'travel bag', 'weekender tote'],
     sizes: ['One Size'],
   },
@@ -71,7 +92,11 @@ export const products: Product[] = [
     material: 'Cashmere',
     color: 'Navy',
     price: 95.0,
-    imageUrls: ['https://picsum.photos/seed/beanie-1/1000/1000', 'https://picsum.photos/seed/beanie-2/1000/1000', 'https://picsum.photos/seed/beanie-3/1000/1000'],
+    imageUrls: [
+      'https://images.unsplash.com/photo-1594488542232-358f29c62c35?q=80&w=1000&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1614055990263-e380585a97f2?q=80&w=1000&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1618350311755-9b2f75a6f3b0?q=80&w=1000&auto=format&fit=crop'
+    ],
     imageHints: ['cashmere beanie', 'blue hat', 'winter hat'],
   },
   {
@@ -82,7 +107,11 @@ export const products: Product[] = [
     material: 'Metal',
     color: 'Gold',
     price: 150.0,
-    imageUrls: ['https://picsum.photos/seed/sunglasses-1/1000/1000', 'https://picsum.photos/seed/sunglasses-2/1000/1000', 'https://picsum.photos/seed/sunglasses-3/1000/1000'],
+    imageUrls: [
+      'https://images.unsplash.com/photo-1511499767150-a48a237f0083?q=80&w=1000&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1577803645773-f92f255379a7?q=80&w=1000&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1607969852110-4f5539d048b9?q=80&w=1000&auto=format&fit=crop'
+    ],
     imageHints: ['aviator sunglasses', 'gold sunglasses', 'eyewear'],
   },
   {
@@ -93,7 +122,11 @@ export const products: Product[] = [
     material: 'Nylon',
     color: 'Black',
     price: 65.0,
-    imageUrls: ['https://picsum.photos/seed/golf-umbrella-1/1000/1000', 'https://picsum.photos/seed/golf-umbrella-2/1000/1000', 'https://picsum.photos/seed/golf-umbrella-3/1000/1000'],
+    imageUrls: [
+      'https://images.unsplash.com/photo-1549443224-87a175003635?q=80&w=1000&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1525287739958-9a38528f8f55?q=80&w=1000&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1542643594-279561274945?q=80&w=1000&auto=format&fit=crop'
+    ],
     imageHints: ['golf umbrella', 'large umbrella', 'black umbrella'],
   },
   {
@@ -104,7 +137,11 @@ export const products: Product[] = [
     material: 'Suede',
     color: 'Chocolate Brown',
     price: 85.0,
-    imageUrls: ['https://picsum.photos/seed/belt-1/1000/1000', 'https://picsum.photos/seed/belt-2/1000/1000', 'https://picsum.photos/seed/belt-3/1000/1000'],
+    imageUrls: [
+      'https://images.unsplash.com/photo-1621261159851-a2b85d99619a?q=80&w=1000&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1524391163456-c56c20f5008b?q=80&w=1000&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1619004899161-4c5f9d685e54?q=80&w=1000&auto=format&fit=crop'
+    ],
     imageHints: ['suede belt', 'brown belt', 'leather belt'],
     sizes: ['30', '32', '34', '36', '38'],
   },
@@ -116,7 +153,11 @@ export const products: Product[] = [
     material: 'Nylon',
     color: 'Black',
     price: 130.0,
-    imageUrls: ['https://picsum.photos/seed/backpack-1/1000/1000', 'https://picsum.photos/seed/backpack-2/1000/1000', 'https://picsum.photos/seed/backpack-3/1000/1000'],
+    imageUrls: [
+      'https://images.unsplash.com/photo-1553062407-98eeb6e0e5c8?q=80&w=1000&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1577733975221-87504143a579?q=80&w=1000&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1586953208448-b95a8e353b32?q=80&w=1000&auto=format&fit=crop'
+    ],
     imageHints: ['nylon backpack', 'black backpack', 'commuter bag'],
   },
 ];

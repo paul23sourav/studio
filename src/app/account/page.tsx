@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useCurrency } from "@/context/currency-context"
 import { useUser } from "@/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SeedDatabase } from "./seed-database";
 
 export default function AccountPage() {
   const { currency, setCurrency } = useCurrency();
@@ -88,6 +89,7 @@ export default function AccountPage() {
           <Button>Save changes</Button>
         </CardFooter>
       </Card>
+      <SeedDatabase />
     </div>
   )
 }
