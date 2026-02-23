@@ -1,9 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { firestore } from '@/firebase/server';
+import { firestore, storage } from '@/firebase/server';
 import { Product } from '@/lib/types';
-import { deleteFile } from '@/firebase/storage';
 
 type ProductData = Omit<Product, 'id'>;
 
@@ -32,13 +31,39 @@ export async function updateProduct(id: string, data: Partial<ProductData>) {
   }
 }
 
+function getPathFromUrl(url: string): string | null {
+  try {
+      const parsedUrl = new URL(url);
+      const match = parsedUrl.pathname.match(/\/o\/(.*)/);
+      if (match && match[1]) {
+          return decodeURIComponent(match[1].split('?')[0]);
+      }
+      return null;
+  } catch (e) {
+      console.error(`Invalid URL for storage path extraction: ${url}`, e);
+      return null;
+  }
+}
+
 export async function deleteProduct(id: string, imageUrls: string[]) {
   try {
-    // Delete images from storage first
-    const deletePromises = imageUrls.map(url => deleteFile(url));
+    const bucket = storage.bucket();
+    
+    const deletePromises = imageUrls.map(async (url) => {
+        const filePath = getPathFromUrl(url);
+        if (filePath) {
+            try {
+                await bucket.file(filePath).delete();
+            } catch (error: any) {
+                if (error.code !== 404) { // Not found is okay
+                    console.error(`Failed to delete image from storage: ${filePath}`, error);
+                }
+            }
+        }
+    });
+
     await Promise.all(deletePromises);
 
-    // Delete document from firestore
     await firestore.collection('products').doc(id).delete();
     
     revalidatePath('/admin');

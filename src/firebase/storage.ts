@@ -4,8 +4,7 @@ import {
     getStorage, 
     ref, 
     uploadBytesResumable, 
-    getDownloadURL,
-    deleteObject
+    getDownloadURL
 } from 'firebase/storage';
 import { getApp } from 'firebase/app';
 
@@ -37,21 +36,4 @@ export async function uploadFile(
       }
     );
   });
-}
-
-// This can be called from server actions or client components
-export async function deleteFile(fileUrl: string): Promise<void> {
-    const app = getApp();
-    const storage = getStorage(app);
-    try {
-        const fileRef = ref(storage, fileUrl);
-        await deleteObject(fileRef);
-    } catch (error: any) {
-        // It's okay if the file doesn't exist.
-        if (error.code !== 'storage/object-not-found') {
-            console.error("Error deleting file from storage:", error);
-            // We don't throw here to avoid blocking the main operation (e.g., product deletion)
-            // if an image is already gone.
-        }
-    }
 }
