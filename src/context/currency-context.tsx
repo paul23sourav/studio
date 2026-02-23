@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 
 type Currency = 'USD' | 'INR';
 
-const CONVERSION_RATES: Record<Currency, number> = {
+export const CONVERSION_RATES: Record<Currency, number> = {
   USD: 1,
   INR: 83.5,
 };

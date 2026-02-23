@@ -13,7 +13,7 @@ service firebase.storage {
     }
 
     // Restrict write access to the 'products' folder to admins only.
-    match /products/{productId}/{imageName} {
+    match /products/{imageName} {
       allow write: if isAdmin();
     }
   }

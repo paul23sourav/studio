@@ -17,11 +17,13 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import ImageUploader from './image-uploader';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { addProduct, updateProduct } from '../actions';
 import { v4 as uuidv4 } from 'uuid';
+import { useCurrency } from '@/context/currency-context';
+import { CONVERSION_RATES } from '@/context/currency-context';
 
 const productSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -43,6 +45,9 @@ interface ProductFormProps {
 export default function ProductForm({ product }: ProductFormProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const { currency } = useCurrency();
+  const conversionRate = CONVERSION_RATES[currency];
+
   const {
     register,
     handleSubmit,
@@ -55,7 +60,7 @@ export default function ProductForm({ product }: ProductFormProps) {
       name: product?.name ?? '',
       description: product?.description ?? '',
       category: product?.category ?? 'Bags',
-      price: product?.price ?? 0,
+      price: product?.price ? parseFloat((product.price * conversionRate).toFixed(2)) : 0,
       stock: product?.stock ?? 0,
       status: product?.status ?? 'draft',
       material: product?.material ?? '',
@@ -64,6 +69,15 @@ export default function ProductForm({ product }: ProductFormProps) {
   });
 
   const [imageUrls, setImageUrls] = useState<string[]>(product?.imageUrls ?? []);
+  const [basePriceUsd] = useState(product?.price);
+
+  useEffect(() => {
+    if (basePriceUsd !== undefined) {
+        const newConversionRate = CONVERSION_RATES[currency];
+        setValue('price', parseFloat((basePriceUsd * newConversionRate).toFixed(2)), { shouldValidate: true });
+    }
+  }, [currency, basePriceUsd, setValue]);
+
 
   const onSubmit = async (data: ProductFormData) => {
     if (imageUrls.length === 0) {
@@ -74,17 +88,20 @@ export default function ProductForm({ product }: ProductFormProps) {
         });
         return;
     }
+    
+    const submissionConversionRate = CONVERSION_RATES[currency];
+    const priceInUsd = data.price / submissionConversionRate;
 
     try {
         if (product) {
-            await updateProduct(product.id, { ...data, imageUrls });
+            await updateProduct(product.id, { ...data, price: priceInUsd, imageUrls });
             toast({
                 title: 'Product updated',
                 description: `"${data.name}" has been successfully updated.`,
             });
         } else {
             const id = `${data.name.toLowerCase().replace(/\s+/g, '-')}-${uuidv4().split('-')[0]}`;
-            await addProduct(id, { ...data, imageUrls });
+            await addProduct(id, { ...data, price: priceInUsd, imageUrls });
             toast({
                 title: 'Product created',
                 description: `"${data.name}" has been successfully created.`,
@@ -135,7 +152,7 @@ export default function ProductForm({ product }: ProductFormProps) {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="price">Price (USD)</Label>
+                  <Label htmlFor="price">Price ({currency})</Label>
                   <Input id="price" type="number" step="0.01" {...register('price')} />
                   {errors.price && <p className="text-sm text-destructive mt-1">{errors.price.message}</p>}
                 </div>

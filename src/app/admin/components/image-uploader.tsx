@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { X, UploadCloud, Image as ImageIcon } from 'lucide-react';
+import { X, UploadCloud } from 'lucide-react';
 import Image from 'next/image';
 import { v4 as uuidv4 } from 'uuid';
 import { uploadFile } from '@/firebase/storage';
@@ -19,7 +19,7 @@ interface ImageUploaderProps {
 export default function ImageUploader({ existingImageUrls = [], onImageUrlsChange }: ImageUploaderProps) {
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const handleRemoveImage = (urlToRemove: string) => {
     // Note: This only removes from the UI state. Deleting from storage is handled when the product is saved/deleted.
@@ -31,37 +31,54 @@ export default function ImageUploader({ existingImageUrls = [], onImageUrlsChang
     if (acceptedFiles.length === 0) return;
     
     setUploading(true);
-    setProgress(0);
+    setUploadProgress(0);
     
-    const file = acceptedFiles[0];
-    const uniqueId = uuidv4();
-    const fileExtension = file.name.split('.').pop();
-    const fileName = `${uniqueId}.${fileExtension}`;
-    const filePath = `products/${fileName}`;
+    const progresses: { [key: string]: number } = {};
+    const totalFiles = acceptedFiles.length;
+
+    const updateOverallProgress = () => {
+        const totalProgress = Object.values(progresses).reduce((acc, p) => acc + p, 0);
+        const overallPercentage = totalProgress / totalFiles;
+        setUploadProgress(overallPercentage);
+    };
+
+    const uploadPromises = acceptedFiles.map(file => {
+        const uniqueId = uuidv4();
+        const fileExtension = file.name.split('.').pop();
+        const fileName = `${uniqueId}.${fileExtension}`;
+        const filePath = `products/${fileName}`;
+
+        progresses[file.name] = 0;
+
+        return uploadFile(file, filePath, (p) => {
+            progresses[file.name] = p;
+            updateOverallProgress();
+        });
+    });
 
     try {
-      const downloadUrl = await uploadFile(file, filePath, (p) => setProgress(p));
-      onImageUrlsChange([...existingImageUrls, downloadUrl]);
-      toast({
-        title: 'Image uploaded',
-        description: 'The image has been successfully uploaded.',
-      });
+        const newUrls = await Promise.all(uploadPromises);
+        onImageUrlsChange([...existingImageUrls, ...newUrls]);
+        toast({
+            title: 'Images uploaded',
+            description: `${newUrls.length} image(s) have been successfully uploaded.`,
+        });
     } catch (error) {
-      console.error("Upload failed:", error);
-      toast({
-        variant: 'destructive',
-        title: 'Upload failed',
-        description: 'There was a problem uploading your image.',
-      });
+        console.error("Upload failed:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Upload failed',
+            description: 'There was a problem uploading one or more images.',
+        });
     } finally {
-      setUploading(false);
+        setUploading(false);
     }
   }, [existingImageUrls, onImageUrlsChange, toast]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
     onDrop,
     accept: { 'image/*': ['.jpeg', '.png', '.gif', '.webp'] },
-    multiple: false 
+    multiple: true 
   });
 
   return (
@@ -75,14 +92,14 @@ export default function ImageUploader({ existingImageUrls = [], onImageUrlsChang
         <input {...getInputProps()} />
         <div className="flex flex-col items-center gap-2 text-muted-foreground">
           <UploadCloud className="h-8 w-8" />
-          {isDragActive ? <p>Drop the file here...</p> : <p>Drag & drop an image here, or click to select</p>}
+          {isDragActive ? <p>Drop the files here...</p> : <p>Drag & drop images here, or click to select</p>}
         </div>
       </div>
       
       {uploading && (
         <div className="space-y-2">
             <Label>Uploading...</Label>
-            <Progress value={progress} />
+            <Progress value={uploadProgress} />
         </div>
       )}
 
