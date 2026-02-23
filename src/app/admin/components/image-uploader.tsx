@@ -12,6 +12,11 @@ import { uploadFile } from '@/firebase/storage';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 
+interface Upload {
+  file: File;
+  progress: number;
+}
+
 interface ImageUploaderProps {
   existingImageUrls?: string[];
   onImageUrlsChange: (urls: string[]) => void;
@@ -20,8 +25,8 @@ interface ImageUploaderProps {
 export default function ImageUploader({ existingImageUrls = [], onImageUrlsChange }: ImageUploaderProps) {
   const { toast } = useToast();
   const storage = useStorage();
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploads, setUploads] = useState<Upload[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleRemoveImage = (urlToRemove: string) => {
     const newUrls = existingImageUrls.filter(url => url !== urlToRemove);
@@ -40,30 +45,32 @@ export default function ImageUploader({ existingImageUrls = [], onImageUrlsChang
       return;
     }
 
-    setUploading(true);
-    setUploadProgress(0);
+    setIsUploading(true);
+    const newUploads: Upload[] = acceptedFiles.map(file => ({ file, progress: 0 }));
+    setUploads(newUploads);
     
-    const progresses: { [key: string]: number } = {};
-    const totalFiles = acceptedFiles.length;
-
-    const updateOverallProgress = () => {
-        const totalProgress = Object.values(progresses).reduce((acc, p) => acc + p, 0);
-        const overallPercentage = totalProgress / totalFiles;
-        setUploadProgress(overallPercentage);
-    };
-
-    const uploadPromises = acceptedFiles.map((file) => {
+    const uploadPromises = newUploads.map(async (upload) => {
         const uniqueId = uuidv4();
-        const fileExtension = file.name.split('.').pop();
-        const fileName = `${uniqueId}.${fileExtension}`;
+        const nameParts = upload.file.name.split('.');
+        const fileExtension = nameParts.length > 1 ? nameParts.pop() : '';
+        const fileName = `${uniqueId}${fileExtension ? `.${fileExtension}` : ''}`;
         const filePath = `products/${fileName}`;
 
-        progresses[fileName] = 0;
-
-        return uploadFile(storage, file, filePath, (p) => {
-            progresses[fileName] = p;
-            updateOverallProgress();
-        });
+        try {
+            const url = await uploadFile(storage, upload.file, filePath, (p) => {
+                setUploads(prev => 
+                    prev.map(u => 
+                        u.file.name === upload.file.name && u.file.size === upload.file.size 
+                        ? {...u, progress: p} 
+                        : u
+                    )
+                );
+            });
+            return url;
+        } catch (error) {
+            // This error will be caught by the outer Promise.all handler
+            throw error;
+        }
     });
 
     try {
@@ -78,41 +85,54 @@ export default function ImageUploader({ existingImageUrls = [], onImageUrlsChang
         toast({
             variant: 'destructive',
             title: 'Upload failed',
-            description: 'There was a problem uploading one or more images.',
+            description: 'There was a problem uploading one or more images. Please check permissions and try again.',
         });
     } finally {
-        setUploading(false);
+        setIsUploading(false);
+        setUploads([]);
     }
   }, [storage, existingImageUrls, onImageUrlsChange, toast]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
     onDrop,
     accept: { 'image/*': ['.jpeg', '.png', '.gif', '.webp'] },
-    multiple: true 
+    multiple: true,
+    disabled: isUploading
   });
 
   return (
     <div className="space-y-4">
       <div
         {...getRootProps()}
-        className={`flex justify-center w-full rounded-lg border-2 border-dashed p-12 text-center cursor-pointer transition-colors ${
-          isDragActive ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/50'
+        className={`flex justify-center w-full rounded-lg border-2 border-dashed p-12 text-center transition-colors ${
+          isUploading 
+            ? 'cursor-not-allowed bg-muted/50'
+            : isDragActive 
+              ? 'border-primary bg-primary/10 cursor-copy' 
+              : 'border-border hover:border-primary/50 cursor-pointer'
         }`}
       >
         <input {...getInputProps()} />
         <div className="flex flex-col items-center gap-2 text-muted-foreground">
           <UploadCloud className="h-8 w-8" />
-          {isDragActive ? <p>Drop the files here...</p> : <p>Drag & drop images here, or click to select</p>}
+          {isDragActive 
+              ? <p>Drop the files here...</p> 
+              : <p>{isUploading ? 'Uploading...' : 'Drag & drop images here, or click to select'}</p>
+          }
         </div>
       </div>
       
-      {uploading && (
-        <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <Label>Uploading...</Label>
-              <span className="text-sm text-muted-foreground">{Math.round(uploadProgress)}%</span>
-            </div>
-            <Progress value={uploadProgress} />
+      {isUploading && (
+        <div className="space-y-4">
+            {uploads.map((upload, index) => (
+              <div key={`${upload.file.name}-${index}`} className="space-y-1">
+                  <div className="flex justify-between items-center text-sm">
+                    <Label className="truncate max-w-[200px] sm:max-w-xs">{upload.file.name}</Label>
+                    <span className="text-muted-foreground">{Math.round(upload.progress)}%</span>
+                  </div>
+                  <Progress value={upload.progress} />
+              </div>
+            ))}
         </div>
       )}
 
@@ -128,6 +148,7 @@ export default function ImageUploader({ existingImageUrls = [], onImageUrlsChang
                         size="icon"
                         className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                         onClick={() => handleRemoveImage(url)}
+                        disabled={isUploading}
                     >
                         <X className="h-4 w-4" />
                         <span className="sr-only">Remove image</span>

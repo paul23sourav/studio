@@ -1,10 +1,10 @@
 'use client';
 
-import { 
-    ref, 
-    uploadBytesResumable, 
-    getDownloadURL,
-    Storage
+import {
+  ref,
+  uploadBytesResumable,
+  getDownloadURL,
+  Storage,
 } from 'firebase/storage';
 
 // This function is designed to run on the client.
@@ -21,7 +21,10 @@ export async function uploadFile(
     uploadTask.on(
       'state_changed',
       (snapshot) => {
-        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        const progress =
+          snapshot.totalBytes > 0
+            ? (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+            : 0;
         onProgress(progress);
       },
       (error) => {
@@ -29,8 +32,13 @@ export async function uploadFile(
         reject(error);
       },
       async () => {
-        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-        resolve(downloadURL);
+        try {
+          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+          resolve(downloadURL);
+        } catch (error) {
+          console.error('Error getting download URL:', error);
+          reject(error);
+        }
       }
     );
   });
