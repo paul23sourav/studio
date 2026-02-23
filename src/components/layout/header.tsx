@@ -104,9 +104,11 @@ export function Header() {
           </SheetTrigger>
           <SheetContent side="left">
             <SheetHeader className="text-left">
+              <SheetTitle>
                 <Link href="/" className="flex items-center gap-2 text-lg font-semibold">
                   <PaulLogo />
                 </Link>
+              </SheetTitle>
             </SheetHeader>
             <nav className="grid gap-6 text-lg font-medium mt-6">
               <Link href="/" className="text-muted-foreground hover:text-foreground">
