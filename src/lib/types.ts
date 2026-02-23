@@ -6,8 +6,8 @@ export type Product = {
   material: string;
   color: string;
   price: number;
-  imageUrl: string;
-  imageHint: string;
+  imageUrls: string[];
+  imageHints: string[];
   sizes?: string[];
   care?: string[];
 };

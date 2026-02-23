@@ -1,10 +1,16 @@
 import { products } from '@/lib/products';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
-import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { StyleAssistant } from './components/style-assistant';
 import AddToCartButton from './components/add-to-cart-button';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 export default function ProductDetailPage({ params }: { params: { productId: string } }) {
   const product = products.find((p) => p.id === params.productId);
@@ -16,17 +22,27 @@ export default function ProductDetailPage({ params }: { params: { productId: str
   return (
     <div className="container mx-auto px-4 md:px-6 py-12">
       <div className="grid md:grid-cols-2 gap-8 lg:gap-16">
-        <div className="aspect-square relative bg-card rounded-lg overflow-hidden">
-          <Image
-            src={product.imageUrl}
-            alt={product.name}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, 50vw"
-            priority
-            data-ai-hint={product.imageHint}
-          />
-        </div>
+        <Carousel className="w-full">
+          <CarouselContent>
+            {product.imageUrls.map((url, index) => (
+              <CarouselItem key={index}>
+                <div className="aspect-square relative bg-card rounded-lg overflow-hidden">
+                  <Image
+                    src={url}
+                    alt={`${product.name} image ${index + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    priority={index === 0}
+                    data-ai-hint={product.imageHints[index]}
+                  />
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselPrevious className="hidden md:flex" />
+          <CarouselNext className="hidden md:flex" />
+        </Carousel>
         
         <div className="flex flex-col">
           <h1 className="text-3xl lg:text-4xl font-bold">{product.name}</h1>

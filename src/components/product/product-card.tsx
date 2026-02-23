@@ -10,12 +10,12 @@ export function ProductCard({ product }: { product: Product }) {
         <CardContent className="p-0">
           <div className="aspect-square relative">
             <Image
-              src={product.imageUrl}
+              src={product.imageUrls[0]}
               alt={product.name}
               fill
               className="object-cover"
               sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-              data-ai-hint={product.imageHint}
+              data-ai-hint={product.imageHints[0]}
             />
           </div>
           <div className="p-4">

@@ -20,7 +20,7 @@ async function imageUrlToDataUri(url: string): Promise<string> {
 }
 
 export async function getStyleRecommendations(product: Product) {
-  const dataUri = await imageUrlToDataUri(product.imageUrl);
+  const dataUri = await imageUrlToDataUri(product.imageUrls[0]);
 
   const recommendations = await styleRecommendationForProduct({
     productName: product.name,
