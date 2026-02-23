@@ -16,7 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Sheet, SheetTrigger, SheetContent } from '@/components/ui/sheet';
+import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { PaulLogo } from '@/components/icons';
 import { useCart } from '@/context/cart-context';
 import { CartSheet } from '@/components/cart/cart-sheet';
@@ -99,10 +99,14 @@ export function Header() {
             </Button>
           </SheetTrigger>
           <SheetContent side="left">
+            <SheetHeader className="text-left">
+              <SheetTitle>
+                <Link href="/" className="flex items-center gap-2 text-lg font-semibold">
+                  <PaulLogo />
+                </Link>
+              </SheetTitle>
+            </SheetHeader>
             <nav className="grid gap-6 text-lg font-medium">
-              <Link href="/" className="flex items-center gap-2 text-lg font-semibold">
-                <PaulLogo />
-              </Link>
               <Link href="/" className="text-muted-foreground hover:text-foreground">
                 Shop
               </Link>
