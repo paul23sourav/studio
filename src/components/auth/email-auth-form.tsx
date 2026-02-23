@@ -33,6 +33,26 @@ interface EmailAuthFormProps {
     mode: 'login' | 'signup';
 }
 
+function getFriendlyAuthErrorMessage(errorCode: string): string {
+    switch (errorCode) {
+        case 'auth/invalid-email':
+            return 'Please enter a valid email address.';
+        case 'auth/user-not-found':
+        case 'auth/wrong-password':
+        case 'auth/invalid-credential':
+            return 'Invalid email or password. Please try again.';
+        case 'auth/email-already-in-use':
+            return 'An account with this email address already exists. Please log in.';
+        case 'auth/weak-password':
+            return 'The password is too weak. Please use at least 6 characters.';
+        case 'auth/too-many-requests':
+            return 'Access to this account has been temporarily disabled due to many failed login attempts. You can immediately restore it by resetting your password or you can try again later.';
+        default:
+            return 'An unexpected error occurred. Please try again.';
+    }
+}
+
+
 export function EmailAuthForm({ mode }: EmailAuthFormProps) {
     const auth = useAuth();
     const firestore = useFirestore();
@@ -90,11 +110,11 @@ export function EmailAuthForm({ mode }: EmailAuthFormProps) {
             }
         } catch (error: any) {
             console.error(`${mode} error:`, error);
-            const errorMessage = error.code ? error.code.replace('auth/', '').replace(/-/g, ' ') : 'An unexpected error occurred.';
+            const errorMessage = getFriendlyAuthErrorMessage(error.code);
             toast({
                 variant: 'destructive',
                 title: `${mode === 'signup' ? 'Sign up' : 'Sign in'} failed`,
-                description: errorMessage.charAt(0).toUpperCase() + errorMessage.slice(1)
+                description: errorMessage
             });
         } finally {
             setLoading(false);
