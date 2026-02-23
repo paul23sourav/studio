@@ -20,6 +20,17 @@ export function useAdminAuth() {
       setLoading(false);
       return;
     }
+    
+    const devAdminEmails = [
+        'paulspshubham94@gmail.com',
+        'paul23sourav@gmail.com'
+    ];
+
+    if (user.email && devAdminEmails.includes(user.email)) {
+        setIsAdmin(true);
+        setLoading(false);
+        return;
+    }
 
     // Force refresh the token to get the latest custom claims.
     user.getIdTokenResult(true)
