@@ -5,10 +5,10 @@ import { FirebaseOptions } from 'firebase/app';
 // https://firebase.google.com/docs/web/setup#access-firebase
 
 export const firebaseConfig: FirebaseOptions = {
-  apiKey: "REPLACE_WITH_YOUR_API_KEY",
-  authDomain: "REPLACE_WITH_YOUR_AUTH_DOMAIN",
-  projectId: "REPLACE_WITH_YOUR_PROJECT_ID",
-  storageBucket: "REPLACE_WITH_YOUR_STORAGE_BUCKET",
-  messagingSenderId: "REPLACE_WITH_YOUR_MESSAGING_SENDER_ID",
-  appId: "REPLACE_WITH_YOUR_APP_ID"
+  apiKey: "AIzaSyA1uoQ-wzbFvyPkXk5cWZDeQN2TNsVGk2Y",
+  authDomain: "studio-1318451066-8d8d0.firebaseapp.com",
+  projectId: "studio-1318451066-8d8d0",
+  storageBucket: "studio-1318451066-8d8d0.appspot.com",
+  messagingSenderId: "660819175294",
+  appId: "1:660819175294:web:f9d3b934127bfb0605752f"
 };
