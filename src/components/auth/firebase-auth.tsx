@@ -61,6 +61,9 @@ const FirebaseAuth = () => {
                 };
                 const userDocRef = doc(firestore, 'users', user.uid);
                 setDoc(userDocRef, userProfileData, { merge: true })
+                  .then(() => {
+                    router.push('/');
+                  })
                   .catch((serverError) => {
                     const permissionError = new FirestorePermissionError({
                       path: userDocRef.path,
@@ -68,9 +71,12 @@ const FirebaseAuth = () => {
                       requestResourceData: userProfileData,
                     });
                     errorEmitter.emit('permission-error', permissionError);
+                    // If profile creation fails, sign the user out to avoid an inconsistent state
+                    auth.signOut();
                   });
+              } else {
+                router.push('/');
               }
-              router.push('/');
               return false; // Prevent redirect by firebaseui
             },
           },

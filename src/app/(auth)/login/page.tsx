@@ -14,7 +14,7 @@ export default function LoginPage() {
         <CardHeader>
           <CardTitle className="text-2xl">Login or Sign up</CardTitle>
           <CardDescription>
-            Use one of the providers below to access your account.
+            Use one of the providers below to access your account or create a new one.
           </CardDescription>
         </CardHeader>
         <CardContent>
