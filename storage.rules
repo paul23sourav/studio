@@ -3,6 +3,23 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
+    //
+    // ACCESS CONTROL FUNCTIONS
+    //
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    // The isDevAdmin function grants admin rights to specific developer accounts.
+    function isDevAdmin() {
+      return isAuth() && (request.auth.token.email == 'paulspshubham94@gmail.com' || request.auth.token.email == 'paul23sourav@gmail.com');
+    }
+
+    // The isAdmin function checks for either a custom 'admin' claim or if the user is a dev admin.
+    function isAdmin() {
+      return isAuth() && (request.auth.token.admin == true || isDevAdmin());
+    }
+
     // These rules control access to the 'products' folder.
     match /products/{imageName} {
       // Allow anyone to read product images.
@@ -10,19 +27,13 @@ service firebase.storage {
       allow read: if true;
 
       // Allow creating/uploading files only if the user is an admin.
-      // This rule inlines all checks to remove ambiguity from helper functions.
-      allow create: if request.auth != null &&
-                       (request.auth.token.admin == true ||
-                        request.auth.token.email == 'paulspshubham94@gmail.com' ||
-                        request.auth.token.email == 'paul23sourav@gmail.com') &&
-                       request.resource.size < 5 * 1024 * 1024 && // 5MB limit
+      // This also enforces a 5MB file size limit and image-only content types.
+      allow create: if isAdmin() &&
+                       request.resource.size < 5 * 1024 * 1024 &&
                        request.resource.contentType.matches('image/.*');
 
       // Allow deleting files only if the user is an admin.
-      allow delete: if request.auth != null &&
-                       (request.auth.token.admin == true ||
-                        request.auth.token.email == 'paulspshubham94@gmail.com' ||
-                        request.auth.token.email == 'paul23sourav@gmail.com');
+      allow delete: if isAdmin();
 
       // Disallow updating file metadata for security.
       allow update: if false;
