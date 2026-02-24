@@ -32,7 +32,7 @@ export function useAdminAuth() {
             'paul23sourav@gmail.com'
         ];
         // The email in the token is the source of truth for security rules.
-        const userEmail = idTokenResult.token.email; 
+        const userEmail = idTokenResult.claims.email; 
         const isDevAdmin = userEmail ? devAdminEmails.includes(userEmail) : false;
 
         setIsAdmin(isAdminClaim || isDevAdmin);
