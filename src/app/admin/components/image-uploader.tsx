@@ -7,14 +7,14 @@ import { X, UploadCloud } from 'lucide-react';
 import Image from 'next/image';
 import { v4 as uuidv4 } from 'uuid';
 import { useStorage } from '@/firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL, StorageError } from 'firebase/storage';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 
-function getFirebaseStorageErrorMessage(error: any): string {
+function getFirebaseStorageErrorMessage(error: StorageError): string {
     switch (error.code) {
         case 'storage/unauthorized':
-            return "Permission Denied: You do not have permission to upload files. Please ensure you are logged in as an admin and that your Storage Security Rules are correctly published in the Firebase Console.";
+            return "Permission Denied: Your security rules are blocking this upload. Please ensure your storage.rules allow write access for admins.";
         case 'storage/object-not-found':
             return "File Not Found: The file may have been moved or deleted.";
         case 'storage/bucket-not-found':
@@ -28,13 +28,13 @@ function getFirebaseStorageErrorMessage(error: any): string {
         case 'storage/canceled':
             return "Upload Canceled.";
         case 'storage/retry-limit-exceeded':
-             return "Connection Timed Out: The network connection has been lost. Please check your internet connection and firewall settings.";
+             return "Connection Timed Out: The network connection has been lost. Please check your internet connection.";
         case 'storage/invalid-url':
             return "Invalid URL: The URL for the file is malformed.";
         case 'storage/unknown':
-            return "An unknown error occurred. This is often due to a CORS configuration issue. Please verify that your Storage bucket's CORS policy is set correctly in the Google Cloud Console to allow requests from your app's domain.";
+            return "An unknown network error occurred. This is almost always a CORS configuration issue. Please verify that your Storage bucket's CORS policy is correctly set in the Google Cloud Console to allow requests from your app's domain.";
         default:
-            return error.message || "An unexpected error occurred during upload. Please check the browser console for more details.";
+            return error.message || "An unexpected error occurred during upload.";
     }
 }
 
