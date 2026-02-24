@@ -73,78 +73,79 @@ export function Header() {
       "sticky top-0 z-50 w-full border-b border-transparent bg-background/95 backdrop-blur-sm transition-all",
       isScrolled && "border-b-border"
     )}>
-      <div className="container flex h-16 items-center px-4 md:px-6">
-        <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
-          <Link href="/" className="flex items-center gap-2 text-lg font-semibold md:text-base mr-4">
-            <PaulLogo />
-          </Link>
-          <Link href="/" className="text-muted-foreground transition-colors hover:text-foreground">
-            Shop
-          </Link>
-          <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-1 text-muted-foreground transition-colors hover:text-foreground data-[state=open]:text-foreground">
-              Categories
-              <ChevronDown className="relative top-[1px] ml-1 h-3 w-3 transition-transform duration-200" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              {categories.map((category) => (
-                <DropdownMenuItem key={category} asChild>
-                  <Link href={`/category/${category.toLowerCase()}`}>{category}</Link>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Link href="/account/orders" className="text-muted-foreground transition-colors hover:text-foreground">
-            Orders
-          </Link>
-        </nav>
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="outline" size="icon" className="shrink-0 md:hidden">
-              <Menu className="h-5 w-5" />
-              <span className="sr-only">Toggle navigation menu</span>
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left">
-            <SheetHeader className="text-left">
-              <SheetTitle>
-                <Link href="/" className="flex items-center gap-2 text-lg font-semibold">
-                  <PaulLogo />
+      <div className="container relative flex h-16 items-center justify-between px-4 md:px-6">
+        <div className="flex items-center gap-6">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" className="shrink-0 md:hidden">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle navigation menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left">
+              <SheetHeader className="text-left">
+                <SheetTitle>
+                  <Link href="/" className="flex items-center gap-2 text-lg font-semibold">
+                    <PaulLogo />
+                  </Link>
+                </SheetTitle>
+              </SheetHeader>
+              <nav className="grid gap-6 text-lg font-medium mt-6">
+                <Link href="/" className="text-muted-foreground hover:text-foreground">
+                  Shop
                 </Link>
-              </SheetTitle>
-            </SheetHeader>
-            <nav className="grid gap-6 text-lg font-medium mt-6">
-              <Link href="/" className="text-muted-foreground hover:text-foreground">
-                Shop
-              </Link>
-              <Accordion type="single" collapsible className="w-full -my-2">
-                <AccordionItem value="categories" className="border-b-0">
-                  <AccordionTrigger className="py-2 text-muted-foreground hover:text-foreground hover:no-underline">
-                    Categories
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="mt-2 flex flex-col space-y-4 pl-7">
-                      {categories.map((category) => (
-                        <Link key={category} href={`/category/${category.toLowerCase()}`} className="text-muted-foreground hover:text-foreground">
-                          {category}
-                        </Link>
-                      ))}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-              <Link href="/account/orders" className="text-muted-foreground hover:text-foreground">
-                Orders
-              </Link>
-            </nav>
-          </SheetContent>
-        </Sheet>
-        <div className="flex-1 text-center md:hidden">
-            <Link href="/" className="inline-flex items-center">
+                <Accordion type="single" collapsible className="w-full -my-2">
+                  <AccordionItem value="categories" className="border-b-0">
+                    <AccordionTrigger className="py-2 text-muted-foreground hover:text-foreground hover:no-underline">
+                      Categories
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="mt-2 flex flex-col space-y-4 pl-7">
+                        {categories.map((category) => (
+                          <Link key={category} href={`/category/${category.toLowerCase()}`} className="text-muted-foreground hover:text-foreground">
+                            {category}
+                          </Link>
+                        ))}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+                <Link href="/account/orders" className="text-muted-foreground hover:text-foreground">
+                  Orders
+                </Link>
+              </nav>
+            </SheetContent>
+          </Sheet>
+          <nav className="hidden md:flex md:items-center md:gap-5 lg:gap-6">
+            <Link href="/" className="text-muted-foreground transition-colors hover:text-foreground">
+              Shop
+            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-1 text-muted-foreground transition-colors hover:text-foreground data-[state=open]:text-foreground">
+                Categories
+                <ChevronDown className="relative top-[1px] ml-1 h-3 w-3 transition-transform duration-200" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                {categories.map((category) => (
+                  <DropdownMenuItem key={category} asChild>
+                    <Link href={`/category/${category.toLowerCase()}`}>{category}</Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Link href="/account/orders" className="text-muted-foreground transition-colors hover:text-foreground">
+              Orders
+            </Link>
+          </nav>
+        </div>
+
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+            <Link href="/" className="flex items-center">
                 <PaulLogo />
             </Link>
         </div>
-        <div className="ml-auto flex items-center gap-4">
+
+        <div className="flex items-center gap-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-full">

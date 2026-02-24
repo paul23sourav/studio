@@ -3,20 +3,21 @@ import { cn } from "@/lib/utils";
 export const PaulLogo = ({ className, ...props }: React.SVGProps<SVGSVGElement>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 100 20"
-    className={cn("h-6 w-auto text-primary", className)}
+    viewBox="0 0 140 30"
+    className={cn("h-7 w-auto text-primary", className)}
     {...props}
     fill="currentColor"
   >
     <title>PAUL</title>
     <text
-      x="0"
+      x="50%"
       y="50%"
       dominantBaseline="middle"
-      fontFamily="Inter, sans-serif"
-      fontSize="20"
+      textAnchor="middle"
+      fontFamily="'Bodoni Moda', serif"
+      fontSize="26"
       fontWeight="600"
-      letterSpacing="0.2em"
+      letterSpacing="0.25em"
     >
       PAUL
     </text>
