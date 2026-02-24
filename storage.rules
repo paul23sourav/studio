@@ -6,13 +6,19 @@ service firebase.storage {
     // Product images are publicly readable.
     // Authenticated admins can write (create, update, delete) product images.
     match /products/{imageName} {
+      function isAuth() {
+        return request.auth != null;
+      }
+
       function isDevAdmin() {
-        return request.auth.token.email == 'paulspshubham94@gmail.com' ||
-               request.auth.token.email == 'paul23sourav@gmail.com';
+        return isAuth() && (
+          request.auth.token.email == 'paulspshubham94@gmail.com' ||
+          request.auth.token.email == 'paul23sourav@gmail.com'
+        );
       }
 
       function isAdmin() {
-        return request.auth != null && (request.auth.token.admin == true || isDevAdmin());
+        return isAuth() && (request.auth.token.admin == true || isDevAdmin());
       }
 
       allow read: if true;
