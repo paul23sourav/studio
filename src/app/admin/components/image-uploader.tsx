@@ -4,7 +4,7 @@ import { useState, useCallback, Dispatch, SetStateAction } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { X, UploadCloud } from 'lucide-react';
+import { X, UploadCloud, CheckCircle, AlertCircle } from 'lucide-react';
 import Image from 'next/image';
 import { v4 as uuidv4 } from 'uuid';
 import { useStorage } from '@/firebase';
@@ -16,11 +16,31 @@ interface Upload {
   id: string;
   file: File;
   progress: number;
+  status: 'uploading' | 'completed' | 'error';
 }
 
 interface ImageUploaderProps {
   existingImageUrls?: string[];
   onImageUrlsChange: Dispatch<SetStateAction<string[]>>;
+}
+
+// Helper to get a descriptive error message from a Firebase error object
+function getFirebaseErrorMessage(error: any): string {
+    if (error && typeof error === 'object' && 'code' in error) {
+        switch (error.code) {
+            case 'storage/unauthorized':
+                return "Permission denied. Check your Firebase Storage security rules to ensure you have write access.";
+            case 'storage/object-not-found':
+                return "File not found. This is an unexpected error during upload.";
+            case 'storage/canceled':
+                return "The upload was canceled.";
+            default:
+                return (error as any).message || "An unknown Firebase Storage error occurred.";
+        }
+    } else if (error instanceof Error) {
+        return error.message;
+    }
+    return "An unknown error occurred during upload.";
 }
 
 export default function ImageUploader({ existingImageUrls = [], onImageUrlsChange }: ImageUploaderProps) {
@@ -35,6 +55,15 @@ export default function ImageUploader({ existingImageUrls = [], onImageUrlsChang
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) return;
+
+    if (isUploading) {
+      toast({
+        variant: "destructive",
+        title: "Upload in progress",
+        description: "Please wait for the current batch to finish before adding more files.",
+      });
+      return;
+    }
     
     if (!storage) {
       toast({
@@ -46,89 +75,72 @@ export default function ImageUploader({ existingImageUrls = [], onImageUrlsChang
     }
 
     setIsUploading(true);
-    const newUploads: Upload[] = acceptedFiles.map(file => ({ id: uuidv4(), file, progress: 0 }));
+    const newUploads: Upload[] = acceptedFiles.map(file => ({ 
+      id: uuidv4(), 
+      file, 
+      progress: 0,
+      status: 'uploading'
+    }));
     setUploads(newUploads);
     
-    try {
-      const uploadPromises = newUploads.map(upload => {
-          const uniqueId = uuidv4();
-          const nameParts = upload.file.name.split('.');
-          const fileExtension = nameParts.length > 1 ? `.${nameParts.pop()}` : '';
-          const fileName = `${uniqueId}${fileExtension}`;
-          const filePath = `products/${fileName}`;
-          
-          return uploadFile(storage, upload.file, filePath, (progress) => {
-              setUploads(prev => 
-                  prev.map(u => 
-                      u.id === upload.id
-                      ? {...u, progress } 
-                      : u
-                  )
-              );
-          });
-      });
+    const successfulUrls: string[] = [];
+    const failedFiles: { name: string; reason: string }[] = [];
 
-      const results = await Promise.allSettled(uploadPromises);
+    for (const upload of newUploads) {
+      try {
+        const uniqueId = uuidv4();
+        const nameParts = upload.file.name.split('.');
+        const fileExtension = nameParts.length > 1 ? `.${nameParts.pop()}` : '';
+        const fileName = `${uniqueId}${fileExtension}`;
+        const filePath = `products/${fileName}`;
 
-      const successfulUrls = results
-          .filter((res): res is PromiseFulfilledResult<string> => res.status === 'fulfilled')
-          .map(res => res.value);
-      
-      const failedResults = results.filter((res): res is PromiseRejectedResult => res.status === 'rejected');
+        const downloadURL = await uploadFile(storage, upload.file, filePath, (progress) => {
+          setUploads(prev => 
+            prev.map(u => u.id === upload.id ? {...u, progress } : u)
+          );
+        });
 
-      if (successfulUrls.length > 0) {
-          onImageUrlsChange(prevUrls => [...prevUrls, ...successfulUrls]);
+        successfulUrls.push(downloadURL);
+        setUploads(prev => 
+          prev.map(u => u.id === upload.id ? {...u, status: 'completed', progress: 100 } : u)
+        );
+
+      } catch (error) {
+        const reason = getFirebaseErrorMessage(error);
+        console.error(`Upload failed for ${upload.file.name}:`, error);
+        failedFiles.push({ name: upload.file.name, reason });
+        setUploads(prev => 
+          prev.map(u => u.id === upload.id ? {...u, status: 'error' } : u)
+        );
       }
-
-      if (failedResults.length > 0) {
-          failedResults.forEach(result => {
-              console.error("Firebase Storage Upload Failed:", result.reason);
-          });
-
-          const firstError = failedResults[0].reason;
-          let errorMessage = "An unknown error occurred during upload.";
-
-          if (firstError && typeof firstError === 'object' && 'code' in firstError) {
-              switch (firstError.code) {
-                  case 'storage/unauthorized':
-                      errorMessage = "Permission denied. Check your Firebase Storage security rules to ensure you have write access.";
-                      break;
-                  case 'storage/object-not-found':
-                      errorMessage = "File not found. This is an unexpected error during upload.";
-                      break;
-                  case 'storage/canceled':
-                      errorMessage = "The upload was canceled.";
-                      break;
-                  default:
-                      errorMessage = (firstError as any).message || "An unknown Firebase Storage error occurred.";
-              }
-          } else if (firstError instanceof Error) {
-            errorMessage = firstError.message;
-          }
-
-          toast({
-              variant: 'destructive',
-              title: `${failedResults.length} image(s) failed to upload`,
-              description: errorMessage,
-          });
-      } else if (successfulUrls.length > 0) {
-          toast({
-              title: 'Images uploaded',
-              description: `${successfulUrls.length} image(s) have been successfully uploaded.`,
-          });
-      }
-    } catch (error) {
-      console.error("A critical error occurred during the upload process:", error);
-      toast({
-        variant: "destructive",
-        title: "Upload Failed",
-        description: "A critical error occurred before uploads could complete. Please check the console."
-      })
-    } finally {
-      setIsUploading(false);
-      setUploads([]);
     }
-  }, [storage, onImageUrlsChange, toast]);
+    
+    if (successfulUrls.length > 0) {
+      onImageUrlsChange(prev => [...prev, ...successfulUrls]);
+    }
+
+    if (failedFiles.length > 0) {
+      toast({
+        variant: 'destructive',
+        title: `${failedFiles.length} file(s) failed to upload`,
+        description: `The first error was: ${failedFiles[0].reason}`,
+      });
+    }
+
+    if (successfulUrls.length > 0 && failedFiles.length === 0) {
+      toast({
+        title: 'Upload complete',
+        description: `${successfulUrls.length} image(s) have been successfully uploaded.`,
+      });
+    }
+
+    setIsUploading(false);
+    // Keep uploads in state for a bit to show status, then clear.
+    setTimeout(() => {
+      setUploads([]);
+    }, 5000);
+
+  }, [storage, onImageUrlsChange, toast, isUploading]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
     onDrop,
@@ -160,14 +172,25 @@ export default function ImageUploader({ existingImageUrls = [], onImageUrlsChang
       </div>
       
       {uploads.length > 0 && (
-        <div className="space-y-4">
+        <div className="space-y-2 pt-2">
             {uploads.map((upload) => (
-              <div key={upload.id} className="space-y-1">
-                  <div className="flex justify-between items-center text-sm">
-                    <Label className="truncate max-w-[200px] sm:max-w-xs">{upload.file.name}</Label>
-                    <span className="text-muted-foreground">{Math.round(upload.progress)}%</span>
+              <div key={upload.id} className="relative rounded-lg border p-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-shrink-0">
+                      {upload.status === 'completed' && <CheckCircle className="h-6 w-6 text-green-500" />}
+                      {upload.status === 'error' && <AlertCircle className="h-6 w-6 text-destructive" />}
+                      {upload.status === 'uploading' && (
+                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                      )}
+                    </div>
+                    <div className="flex-1 space-y-1 overflow-hidden">
+                      <p className="text-sm font-medium truncate">{upload.file.name}</p>
+                      {upload.status === 'uploading' && <Progress value={upload.progress} className="h-2" />}
+                      {upload.status === 'error' && <p className="text-xs text-destructive">Upload Failed</p>}
+                      {upload.status === 'completed' && <p className="text-xs text-green-600">Upload Complete</p>}
+                    </div>
+                    {upload.status === 'uploading' && <span className="text-sm font-mono text-muted-foreground">{Math.round(upload.progress)}%</span>}
                   </div>
-                  <Progress value={upload.progress} />
               </div>
             ))}
         </div>
