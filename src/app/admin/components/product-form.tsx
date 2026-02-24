@@ -20,10 +20,13 @@ import ImageUploader from './image-uploader';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { addProduct, updateProduct } from '../actions';
 import { v4 as uuidv4 } from 'uuid';
-import { useCurrency } from '@/context/currency-context';
-import { CONVERSION_RATES } from '@/context/currency-context';
+import { useCurrency, CONVERSION_RATES } from '@/context/currency-context';
+import { useFirestore, useStorage } from '@/firebase';
+import { doc, setDoc, updateDoc } from 'firebase/firestore';
+import { ref, deleteObject } from 'firebase/storage';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 const productSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -46,13 +49,16 @@ export default function ProductForm({ product }: ProductFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const { currency } = useCurrency();
+  const firestore = useFirestore();
+  const storage = useStorage();
+
   const conversionRate = CONVERSION_RATES[currency];
 
   const {
     register,
     handleSubmit,
     control,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting: isFormSubmitting },
     setValue,
   } = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
@@ -71,6 +77,8 @@ export default function ProductForm({ product }: ProductFormProps) {
   const [imageUrls, setImageUrls] = useState<string[]>(product?.imageUrls ?? []);
   const [isUploading, setIsUploading] = useState(false);
   const [basePriceUsd] = useState(product?.price);
+  
+  const isSubmitting = isFormSubmitting || isUploading;
 
   useEffect(() => {
     if (basePriceUsd !== undefined) {
@@ -79,8 +87,11 @@ export default function ProductForm({ product }: ProductFormProps) {
     }
   }, [currency, basePriceUsd, setValue]);
 
-
   const onSubmit = async (data: ProductFormData) => {
+    if (!firestore || !storage) {
+      toast({ variant: 'destructive', title: 'Firebase not available' });
+      return;
+    }
     if (imageUrls.length === 0) {
         toast({
             variant: "destructive",
@@ -92,17 +103,41 @@ export default function ProductForm({ product }: ProductFormProps) {
     
     const submissionConversionRate = CONVERSION_RATES[currency];
     const priceInUsd = data.price / submissionConversionRate;
+    
+    const finalProductData = {
+        ...data,
+        price: priceInUsd,
+        imageUrls,
+        imageHints: product?.imageHints ?? [],
+        sizes: product?.sizes ?? [],
+        care: product?.care ?? [],
+    };
 
     try {
-        if (product) {
-            await updateProduct(product.id, { ...data, price: priceInUsd, imageUrls });
+        if (product) { // Update existing product
+            const originalUrls = product.imageUrls || [];
+            const urlsToDelete = originalUrls.filter(url => !imageUrls.includes(url));
+            if (urlsToDelete.length > 0) {
+                const deletePromises = urlsToDelete.map(url => {
+                    const imageRef = ref(storage, url);
+                    return deleteObject(imageRef);
+                });
+                await Promise.allSettled(deletePromises);
+            }
+
+            const productRef = doc(firestore, 'products', product.id);
+            await updateDoc(productRef, finalProductData);
+            
             toast({
                 title: 'Product updated',
                 description: `"${data.name}" has been successfully updated.`,
             });
-        } else {
+        } else { // Create new product
             const id = `${data.name.toLowerCase().replace(/\s+/g, '-')}-${uuidv4().split('-')[0]}`;
-            await addProduct(id, { ...data, price: priceInUsd, imageUrls });
+            const productRef = doc(firestore, 'products', id);
+            const newProductData = { ...finalProductData, id };
+            await setDoc(productRef, newProductData);
+            
             toast({
                 title: 'Product created',
                 description: `"${data.name}" has been successfully created.`,
@@ -110,12 +145,18 @@ export default function ProductForm({ product }: ProductFormProps) {
         }
         router.push('/admin');
         router.refresh();
-    } catch (error) {
-        console.error("Failed to save product", error);
+    } catch (serverError: any) {
+        console.error("Failed to save product", serverError);
+        const permissionError = new FirestorePermissionError({
+            path: `/products/${product ? product.id : 'new'}`,
+            operation: product ? 'update' : 'create',
+            requestResourceData: finalProductData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
         toast({
             variant: "destructive",
-            title: 'An error occurred',
-            description: 'Failed to save the product. Please try again.',
+            title: 'Permission Denied',
+            description: 'You do not have permission to save this product.',
         });
     }
   };
@@ -229,8 +270,8 @@ export default function ProductForm({ product }: ProductFormProps) {
       </div>
       <div className="flex items-center justify-end gap-2 mt-8">
         <Button variant="outline" onClick={() => router.back()}>Cancel</Button>
-        <Button type="submit" disabled={isSubmitting || isUploading}>
-          {isUploading ? 'Uploading images...' : isSubmitting ? 'Saving...' : 'Save Product'}
+        <Button type="submit" disabled={isSubmitting}>
+          {isUploading ? 'Uploading...' : isFormSubmitting ? 'Saving...' : 'Save Product'}
         </Button>
       </div>
     </form>

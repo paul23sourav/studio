@@ -1,8 +1,9 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useCollection, useFirestore } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import { useCollection, useFirestore, useStorage } from '@/firebase';
+import { collection, query, doc, deleteDoc } from 'firebase/firestore';
+import { ref, deleteObject } from 'firebase/storage';
 import { Product } from '@/lib/types';
 import {
   Table,
@@ -27,9 +28,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useCurrency } from '@/context/currency-context';
 import { Skeleton } from '@/components/ui/skeleton';
-import { deleteProduct } from '../actions';
 import { useToast } from '@/hooks/use-toast';
 import ConfirmDeleteDialog from './confirm-delete-dialog';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
+
 
 function ProductTableSkeleton() {
   return (
@@ -79,6 +82,7 @@ function ProductTableSkeleton() {
 
 export default function ProductTable() {
   const firestore = useFirestore();
+  const storage = useStorage();
   const productsQuery = useMemo(() => 
     firestore ? query(collection(firestore, 'products')) : null, 
     [firestore]
@@ -88,6 +92,7 @@ export default function ProductTable() {
   const { toast } = useToast();
   
   const [searchTerm, setSearchTerm] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
@@ -101,20 +106,43 @@ export default function ProductTable() {
   };
 
   const handleConfirmDelete = async () => {
-    if (!productToDelete) return;
+    if (!productToDelete || !firestore || !storage) {
+        toast({ variant: 'destructive', title: 'An error occurred.' });
+        return;
+    }
+    
+    setIsDeleting(true);
+
     try {
-      await deleteProduct(productToDelete.id, productToDelete.imageUrls);
+      // 1. Delete images from Storage
+      const deleteImagePromises = productToDelete.imageUrls.map(url => {
+        const imageRef = ref(storage, url);
+        return deleteObject(imageRef);
+      });
+      await Promise.allSettled(deleteImagePromises);
+
+      // 2. Delete document from Firestore
+      const productRef = doc(firestore, 'products', productToDelete.id);
+      await deleteDoc(productRef);
+
       toast({
         title: 'Product deleted',
         description: `"${productToDelete.name}" has been successfully deleted.`,
       });
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error deleting product',
-        description: 'An unexpected error occurred. Please try again.',
-      });
+    } catch (serverError: any) {
+        console.error("Failed to delete product", serverError);
+        const permissionError = new FirestorePermissionError({
+            path: `/products/${productToDelete.id}`,
+            operation: 'delete',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({
+            variant: 'destructive',
+            title: 'Permission Denied',
+            description: 'You do not have permission to delete this product.',
+        });
     } finally {
+        setIsDeleting(false);
         setIsDeleteDialogOpen(false);
         setProductToDelete(null);
     }
@@ -192,7 +220,7 @@ export default function ProductTable() {
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button aria-haspopup="true" size="icon" variant="ghost">
+                            <Button aria-haspopup="true" size="icon" variant="ghost" disabled={isDeleting && productToDelete?.id === product.id}>
                               <MoreHorizontal className="h-4 w-4" />
                               <span className="sr-only">Toggle menu</span>
                             </Button>
