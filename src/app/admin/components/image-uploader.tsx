@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Button } from '@/components/ui/button';
 import { X, UploadCloud, File, CheckCircle2, AlertCircle } from 'lucide-react';
@@ -26,7 +26,7 @@ function getFirebaseErrorMessage(error: any): string {
     if (error && typeof error === 'object' && 'code' in error) {
         switch (error.code) {
             case 'storage/unauthorized':
-                return "Permission Denied: Check storage rules.";
+                return "Permission Denied: Check your storage rules in the Firebase console.";
             case 'storage/canceled':
                 return "Upload canceled.";
             case 'storage/unknown':
@@ -48,53 +48,59 @@ export default function ImageUploader({ existingImageUrls = [], onImageUrlsChang
   const storage = useStorage();
   const [uploads, setUploads] = useState<Upload[]>([]);
 
-  const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    if (!storage) {
-        toast({ variant: 'destructive', title: 'Storage not available' });
-        return;
-    }
-
+  const onDrop = useCallback((acceptedFiles: File[]) => {
     const newUploads: Upload[] = acceptedFiles.map(file => ({
       id: uuidv4(),
       file,
       status: 'pending',
       progress: 0,
     }));
-
     setUploads(prev => [...prev, ...newUploads]);
+  }, []);
 
-    for (const upload of newUploads) {
-      setUploads(prev => prev.map(u => u.id === upload.id ? { ...u, status: 'uploading' } : u));
-      
-      try {
+  useEffect(() => {
+    if (!storage) return;
+
+    uploads.forEach(upload => {
+      if (upload.status === 'pending') {
+        // Set status to uploading to prevent re-triggering this effect for the same file
+        setUploads(prev => prev.map(u => u.id === upload.id ? { ...u, status: 'uploading' } : u));
+        
         const uniqueId = uuidv4();
         const nameParts = upload.file.name.split('.');
         const fileExtension = nameParts.length > 1 ? `.${nameParts.pop()}` : '';
         const fileName = `${uniqueId}${fileExtension}`;
         const filePath = `products/${fileName}`;
 
-        const downloadURL = await uploadFileResumable(
+        uploadFileResumable(
           storage,
           upload.file,
           filePath,
           (progress) => {
             setUploads(prev => prev.map(u => u.id === upload.id ? { ...u, progress } : u));
           }
-        );
-
-        onImageUrlsChange(prevUrls => [...prevUrls, downloadURL]);
-        setUploads(prev => prev.map(u => u.id === upload.id ? { ...u, status: 'success', progress: 100 } : u));
-      } catch (error) {
-        const errorMessage = getFirebaseErrorMessage(error);
-        console.error(`Upload failed for ${upload.file.name}:`, error);
-        setUploads(prev => prev.map(u => u.id === upload.id ? { ...u, status: 'error', error: errorMessage } : u));
+        )
+        .then(downloadURL => {
+          onImageUrlsChange(prevUrls => [...prevUrls, downloadURL]);
+          setUploads(prev => prev.map(u => u.id === upload.id ? { ...u, status: 'success' } : u));
+        })
+        .catch(error => {
+          const errorMessage = getFirebaseErrorMessage(error);
+          console.error(`Upload failed for ${upload.file.name}:`, error);
+          setUploads(prev => prev.map(u => u.id === upload.id ? { ...u, status: 'error', error: errorMessage } : u));
+        });
       }
-    }
-  }, [storage, onImageUrlsChange, toast]);
+    });
+  }, [uploads, storage, onImageUrlsChange]);
+
 
   const handleRemoveImage = (urlToRemove: string) => {
     onImageUrlsChange((prevUrls) => prevUrls.filter((url) => url !== urlToRemove));
   };
+
+  const handleRemoveUpload = (idToRemove: string) => {
+      setUploads(prev => prev.filter(u => u.id !== idToRemove));
+  }
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
     onDrop,
@@ -102,7 +108,7 @@ export default function ImageUploader({ existingImageUrls = [], onImageUrlsChang
     multiple: true,
   });
 
-  const isUploading = uploads.some(u => u.status === 'uploading' || u.status === 'pending');
+  const isUploading = uploads.some(u => u.status === 'uploading');
 
   return (
     <div className="space-y-4">
@@ -173,6 +179,17 @@ export default function ImageUploader({ existingImageUrls = [], onImageUrlsChang
                         )}
                         {upload.status === 'error' && (
                             <AlertCircle className="h-5 w-5 text-destructive"/>
+                        )}
+                        {(upload.status === 'success' || upload.status === 'error') && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 rounded-full"
+                                onClick={() => handleRemoveUpload(upload.id)}
+                            >
+                                <X className="h-4 w-4" />
+                                <span className="sr-only">Remove from list</span>
+                            </Button>
                         )}
                     </div>
                 ))}
