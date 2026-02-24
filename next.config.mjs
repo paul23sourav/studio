@@ -1,16 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'firebasestorage.googleapis.com',
-      },
-    ],
+    domains: ['images.unsplash.com', 'firebasestorage.googleapis.com'],
+  },
+  experimental: {
+    serverActions: {
+      allowedOrigins: ['localhost:3000', '*.firebase.studio'],
+    },
   },
 };
 
