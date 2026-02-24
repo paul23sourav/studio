@@ -73,7 +73,7 @@ export function Header() {
       "sticky top-0 z-50 w-full border-b border-transparent bg-background/95 backdrop-blur-sm transition-all",
       isScrolled && "border-b-border"
     )}>
-      <div className="container relative flex h-16 items-center justify-between px-4 md:px-6">
+      <div className="container flex h-16 items-center justify-between px-4 md:px-6">
         <div className="flex items-center gap-6">
           <Sheet>
             <SheetTrigger asChild>
@@ -116,6 +116,11 @@ export function Header() {
               </nav>
             </SheetContent>
           </Sheet>
+          
+          <Link href="/" className="hidden md:flex items-center">
+             <PaulLogo />
+          </Link>
+
           <nav className="hidden md:flex md:items-center md:gap-5 lg:gap-6">
             <Link href="/" className="text-muted-foreground transition-colors hover:text-foreground">
               Shop
@@ -137,12 +142,6 @@ export function Header() {
               Orders
             </Link>
           </nav>
-        </div>
-
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-            <Link href="/" className="flex items-center">
-                <PaulLogo />
-            </Link>
         </div>
 
         <div className="flex items-center gap-4">
