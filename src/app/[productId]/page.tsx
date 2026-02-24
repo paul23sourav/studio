@@ -73,7 +73,7 @@ export default function ProductDetailPage({ params }: { params: { productId: str
                     className="object-cover"
                     sizes="(max-width: 768px) 100vw, 50vw"
                     priority={index === 0}
-                    data-ai-hint={product.imageHints[index]}
+                    data-ai-hint={product.imageHints?.[index]}
                   />
                 </div>
               </CarouselItem>

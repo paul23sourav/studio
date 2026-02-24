@@ -45,12 +45,17 @@ export default function Home() {
               </div>
             ))}
           </div>
-        ) : (
+        ) : products && products.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
-            {products?.map((product) => (
+            {products.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
+        ) : (
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold">No products found</h2>
+            <p className="text-muted-foreground mt-2">It looks like there are no products in the database. Admins can seed the database from the Account page.</p>
+        </div>
         )}
       </div>
     </div>
