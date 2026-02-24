@@ -5,7 +5,6 @@ import {
   getDownloadURL,
   Storage,
   uploadBytesResumable,
-  UploadTask,
 } from 'firebase/storage';
 
 // This function is designed to run on the client.
@@ -14,30 +13,15 @@ export async function uploadFile(
   file: File,
   path: string,
 ): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const storageRef = ref(storage, path);
-    const uploadTask: UploadTask = uploadBytesResumable(storageRef, file);
-
-    uploadTask.on(
-      'state_changed',
-      (snapshot) => {
-        // Can be used to display upload progress
-        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        console.log('Upload is ' + progress + '% done');
-      },
-      (error) => {
-        // Handle unsuccessful uploads.
-        // This is where Firebase Storage errors (like permission denied) will be caught.
-        reject(error);
-      },
-      () => {
-        // Handle successful uploads on complete.
-        getDownloadURL(uploadTask.snapshot.ref)
-          .then((downloadURL) => {
-            resolve(downloadURL);
-          })
-          .catch(reject);
-      }
-    );
-  });
+  const storageRef = ref(storage, path);
+  
+  // `uploadBytesResumable` is "thenable" and can be awaited. 
+  // It resolves with the snapshot on success or throws an error (e.g., for permission denied),
+  // which will be caught by the calling function's try/catch block.
+  const uploadTaskSnapshot = await uploadBytesResumable(storageRef, file);
+  
+  // Once the upload is complete, get the download URL.
+  const downloadURL = await getDownloadURL(uploadTaskSnapshot.ref);
+  
+  return downloadURL;
 }
