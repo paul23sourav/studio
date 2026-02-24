@@ -7,7 +7,7 @@ import { X, UploadCloud } from 'lucide-react';
 import Image from 'next/image';
 import { v4 as uuidv4 } from 'uuid';
 import { useStorage } from '@/firebase';
-import { uploadFile } from '@/firebase/storage';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 
@@ -70,7 +70,33 @@ export default function ImageUploader({
       });
 
       try {
-        const downloadURL = await uploadFile(storage, file, filePath);
+        const storageRef = ref(storage, filePath);
+        const uploadTask = uploadBytesResumable(storageRef, file);
+
+        const downloadURL = await new Promise<string>((resolve, reject) => {
+          uploadTask.on(
+            'state_changed',
+            (snapshot) => {
+              // Optional: monitor progress
+            },
+            (error) => {
+              // This is the crucial part: on any error, we reject the promise.
+              console.error(`Upload failed for ${file.name}:`, error);
+              reject(error);
+            },
+            async () => {
+              // On success, we get the download URL and resolve the promise.
+              try {
+                const url = await getDownloadURL(uploadTask.snapshot.ref);
+                resolve(url);
+              } catch (getUrlError) {
+                console.error(`Failed to get download URL for ${file.name}:`, getUrlError);
+                reject(getUrlError);
+              }
+            }
+          );
+        });
+
         uploadedUrls.push(downloadURL);
         toast({
           title: 'Upload Successful',
@@ -78,12 +104,16 @@ export default function ImageUploader({
         });
       } catch (error) {
         const errorMessage = getFirebaseErrorMessage(error);
-        console.error(`Failed to upload ${file.name}:`, error);
+        console.error(`Caught upload error for ${file.name}:`, error);
         toast({
           variant: 'destructive',
           title: `Upload Failed: ${file.name}`,
           description: errorMessage,
         });
+        // Stop the entire upload process if one file fails
+        setIsUploading(false);
+        onUploadStateChange(false);
+        return; // Exit the loop
       }
     }
 
