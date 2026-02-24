@@ -4,14 +4,30 @@ service firebase.storage {
   match /b/{bucket}/o {
 
     // Product images are publicly readable.
-    // Only authenticated admins can write (create, update, delete) product images.
+    // Authenticated admins can write (create, update, delete) product images.
     match /products/{imageName} {
+      function isDevAdmin() {
+        return request.auth.token.email == 'paulspshubham94@gmail.com' ||
+               request.auth.token.email == 'paul23sourav@gmail.com';
+      }
+
+      function isAdmin() {
+        return request.auth != null && (request.auth.token.admin == true || isDevAdmin());
+      }
+
       allow read: if true;
-      allow write: if request.auth != null && (
-        request.auth.token.admin == true ||
-        request.auth.token.email == 'paulspshubham94@gmail.com' ||
-        request.auth.token.email == 'paul23sourav@gmail.com'
-      );
+
+      // Allow creating/uploading files only if the user is an admin.
+      // Also, validate the incoming file size and content type.
+      allow create: if isAdmin() &&
+                       request.resource.size < 5 * 1024 * 1024 && // 5MB limit
+                       request.resource.contentType.matches('image/.*');
+
+      // Allow deleting files only if the user is an admin.
+      allow delete: if isAdmin();
+
+      // Disallow updating file metadata.
+      allow update: if false;
     }
   }
 }
