@@ -12,9 +12,9 @@ export const products: Omit<Product, 'id'>[] = [
     stock: 50,
     status: 'active',
     imageUrls: [
-      'https://images.unsplash.com/photo-1605733513596-2a7136e05399?q=80&w=1964&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1610290484439-53b6f1085025?q=80&w=1887&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1608569235583-9369986348f9?q=80&w=1887&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=1935&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1590732822452-4c2270a6c6c2?q=80&w=1887&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1620925703977-2b73b5b15a6b?q=80&w=1887&auto=format&fit=crop',
     ],
     imageHints: ['leather tote', 'brown handbag', 'fashion accessory'],
     sizes: ['One Size'],
@@ -30,9 +30,9 @@ export const products: Omit<Product, 'id'>[] = [
     stock: 100,
     status: 'active',
     imageUrls: [
-      'https://images.unsplash.com/photo-1534087930810-74f369324b13?q=80&w=1887&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1572093514337-97593c6e4e04?q=80&w=1887&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1503437313881-5e3a313404af?q=80&w=2070&auto=format&fit=crop'
+      'https://images.unsplash.com/photo-1580321282283-49d645e5488c?q=80&w=1887&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1618588820982-0b61d931593c?q=80&w=1887&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1549246399-5221b0e95d07?q=80&w=1887&auto=format&fit=crop',
     ],
     imageHints: ['dark umbrella', 'rainy day', 'city walk'],
     sizes: ['One Size'],
@@ -47,9 +47,9 @@ export const products: Omit<Product, 'id'>[] = [
     stock: 75,
     status: 'active',
     imageUrls: [
-      'https://images.unsplash.com/photo-1559563459-b1f452655106?q=80&w=2070&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1628043608502-863a35a14d59?q=80&w=1964&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1629075704257-251300de89a6?q=80&w=1964&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1614035137539-d8001712c11e?q=80&w=1887&auto=format=fit&crop',
+      'https://images.unsplash.com/photo-1621447291741-655f4142f102?q=80&w=1964&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1560962939-95232a488c1b?q=80&w=1887&auto=format&fit=crop',
     ],
     imageHints: ['leather wallet', 'tan cardholder', 'minimal accessory'],
   },
@@ -63,9 +63,9 @@ export const products: Omit<Product, 'id'>[] = [
     stock: 40,
     status: 'active',
     imageUrls: [
-      'https://images.unsplash.com/photo-1513244242294-436cd92bda68?q=80&w=1887&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1610643798939-93f5f67b5145?q=80&w=1887&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1519758254342-c5f21059b9a2?q=80&w=1887&auto=format&fit=crop'
+      'https://images.unsplash.com/photo-1609322394232-f83a2c2c2f7a?q=80&w=1887&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1515231149756-c7b469b61b36?q=80&w=1887&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1574972986423-4560421a30c9?q=80&w=1887&auto=format&fit=crop',
     ],
     imageHints: ['wool scarf', 'grey scarf', 'winter fashion'],
     sizes: ['One Size'],
@@ -81,9 +81,9 @@ export const products: Omit<Product, 'id'>[] = [
     stock: 25,
     status: 'active',
     imageUrls: [
-      'https://images.unsplash.com/photo-1588636141424-58a43657b293?q=80&w=1974&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1621921933013-4e8992f9d18f?q=80&w=1965&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1616347196578-83b3848b59ac?q=80&w=1887&auto=format&fit=crop'
+      'https://images.unsplash.com/photo-1566150905458-1bf1b194fdd5?q=80&w=2072&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1607582278913-b55fa933b749?q=80&w=1974&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1618221876174-878c77d07525?q=80&w=1887&auto=format&fit=crop',
     ],
     imageHints: ['canvas weekender', 'travel duffel', 'green bag'],
     sizes: ['One Size'],
@@ -98,9 +98,9 @@ export const products: Omit<Product, 'id'>[] = [
     stock: 60,
     status: 'active',
     imageUrls: [
-      'https://images.unsplash.com/photo-1612373449377-a8b2df708e1e?q=80&w=1887&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1641699862936-be9f4a9b6f8f?q=80&w=1887&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1598104446969-a1b183a95f2d?q=80&w=1887&auto=format&fit=crop'
+      'https://images.unsplash.com/photo-1672343997972-359f4296476e?q=80&w=1887&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1601135422899-3cb2f9b2c0f6?q=80&w=1887&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1543039016-57a5b3f813e3?q=80&w=1887&auto=format&fit=crop',
     ],
     imageHints: ['navy beanie', 'cashmere hat', 'winter accessory'],
   },
@@ -114,9 +114,9 @@ export const products: Omit<Product, 'id'>[] = [
     stock: 80,
     status: 'active',
     imageUrls: [
-      'https://images.unsplash.com/photo-1574169578809-a149f7041d63?q=80&w=1965&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1620247920192-3538a08a2c2c?q=80&w=1887&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1614728268423-f1e16f5c5314?q=80&w=1887&auto=format&fit=crop'
+      'https://images.unsplash.com/photo-1511499767150-a48a237f0083?q=80&w=1780&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1607969395249-7b5a8e3f6f1c?q=80&w=1887&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1577804359149-165b4b12f18f?q=80&w=1887&auto=format&fit=crop',
     ],
     imageHints: ['aviator sunglasses', 'gold eyewear', 'fashion glasses'],
   },
@@ -130,9 +130,9 @@ export const products: Omit<Product, 'id'>[] = [
     stock: 30,
     status: 'active',
     imageUrls: [
-      'https://images.unsplash.com/photo-1605336585149-75a60c4f828a?q=80&w=1887&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1563202525-47b74441584b?q=80&w=1887&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1543477543-3453b3f2b4e8?q=80&w=1887&auto=format&fit=crop'
+      'https://images.unsplash.com/photo-1542643598-922097b7e8d5?q=80&w=1887&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1522813587213-9a3b839c43d7?q=80&w=1887&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1580321282283-49d645e5488c?q=80&w=1887&auto=format&fit=crop',
     ],
     imageHints: ['golf umbrella', 'large black', 'rain protection'],
   },
@@ -146,9 +146,9 @@ export const products: Omit<Product, 'id'>[] = [
     stock: 90,
     status: 'active',
     imageUrls: [
-      'https://images.unsplash.com/photo-1620905389966-2b4f8a9a463c?q=80&w=1935&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1595995484089-d5870197d197?q=80&w=1887&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1619086392012-d961e89cc86f?q=80&w=1887&auto=format&fit=crop'
+      'https://images.unsplash.com/photo-1617935492473-0d3a1548a313?q=80&w=1887&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1563283222-e1a534c56839?q=80&w=1887&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=1888&auto=format&fit=crop',
     ],
     imageHints: ['suede belt', 'brown accessory', 'fashion detail'],
     sizes: ['30', '32', '34', '36', '38'],
@@ -163,9 +163,9 @@ export const products: Omit<Product, 'id'>[] = [
     stock: 45,
     status: 'active',
     imageUrls: [
-      'https://images.unsplash.com/photo-1577733975212-58273c25a0a9?q=80&w=1887&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1580624911445-56b825313a4a?q=80&w=1887&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1622262654336-b63e80930777?q=80&w=1887&auto=format&fit=crop'
+      'https://images.unsplash.com/photo-1553062407-98eeb6e0e5c8?q=80&w=1887&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1622261622378-6e5a4155b413?q=80&w=1887&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1586953208448-3151cf797f35?q=80&w=1887&auto=format&fit=crop',
     ],
     imageHints: ['black backpack', 'nylon rucksack', 'everyday bag'],
   },
