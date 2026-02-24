@@ -113,52 +113,88 @@ export default function ProductForm({ product }: ProductFormProps) {
         care: product?.care ?? [],
     };
 
-    try {
-        if (product) { // Update existing product
-            const originalUrls = product.imageUrls || [];
-            const urlsToDelete = originalUrls.filter(url => !imageUrls.includes(url));
-            if (urlsToDelete.length > 0) {
-                const deletePromises = urlsToDelete.map(url => {
-                    const imageRef = ref(storage, url);
-                    return deleteObject(imageRef);
-                });
-                await Promise.allSettled(deletePromises);
-            }
+    const handleSuccess = (productName: string, action: 'created' | 'updated') => {
+      toast({
+        title: `Product ${action}`,
+        description: `"${productName}" has been successfully ${action}.`,
+      });
+      router.push('/admin');
+      router.refresh();
+    };
 
-            const productRef = doc(firestore, 'products', product.id);
-            await updateDoc(productRef, finalProductData);
-            
-            toast({
-                title: 'Product updated',
-                description: `"${data.name}" has been successfully updated.`,
-            });
-        } else { // Create new product
-            const id = `${data.name.toLowerCase().replace(/\s+/g, '-')}-${uuidv4().split('-')[0]}`;
-            const productRef = doc(firestore, 'products', id);
-            const newProductData = { ...finalProductData, id };
-            await setDoc(productRef, newProductData);
-            
-            toast({
-                title: 'Product created',
-                description: `"${data.name}" has been successfully created.`,
-            });
+    const handleFirestoreError = (error: any, path: string, operation: 'create' | 'update') => {
+      console.error(`Failed to ${operation} product`, error);
+      const permissionError = new FirestorePermissionError({
+        path,
+        operation,
+        requestResourceData: finalProductData,
+      });
+      errorEmitter.emit('permission-error', permissionError);
+      toast({
+        variant: "destructive",
+        title: 'Permission Denied',
+        description: `You do not have permission to ${operation} this product.`,
+      });
+    };
+
+    // First, handle deleting any old images if we are updating a product
+    if (product) {
+        const originalUrls = product.imageUrls || [];
+        const urlsToDelete = originalUrls.filter(url => !imageUrls.includes(url));
+        if (urlsToDelete.length > 0) {
+            try {
+                const deletePromises = urlsToDelete.map(url => {
+                    const urlObject = new URL(url);
+                    const pathSegments = urlObject.pathname.split('/o/');
+                    if (pathSegments.length > 1) {
+                        const encodedPath = pathSegments[1];
+                        const decodedPath = decodeURIComponent(encodedPath);
+                        const imageRef = ref(storage, decodedPath);
+                        return deleteObject(imageRef);
+                    }
+                    return Promise.resolve();
+                });
+                await Promise.all(deletePromises);
+            } catch (storageError) {
+                console.error("Failed to delete product images from Storage", storageError);
+                toast({
+                    variant: 'destructive',
+                    title: 'Storage Error',
+                    description: 'Could not delete old product images. The product was not saved.',
+                });
+                throw storageError; // Prevent form submission from completing
+            }
         }
-        router.push('/admin');
-        router.refresh();
-    } catch (serverError: any) {
-        console.error("Failed to save product", serverError);
-        const permissionError = new FirestorePermissionError({
-            path: `/products/${product ? product.id : 'new'}`,
-            operation: product ? 'update' : 'create',
-            requestResourceData: finalProductData,
-        });
-        errorEmitter.emit('permission-error', permissionError);
-        toast({
-            variant: "destructive",
-            title: 'Permission Denied',
-            description: 'You do not have permission to save this product.',
-        });
     }
+
+    // Now, perform the Firestore operation using the required .then/.catch pattern
+    return new Promise<void>((resolve, reject) => {
+      if (product) { // Update existing product
+        const productRef = doc(firestore, 'products', product.id);
+        updateDoc(productRef, finalProductData)
+          .then(() => {
+            handleSuccess(data.name, 'updated');
+            resolve();
+          })
+          .catch((error) => {
+            handleFirestoreError(error, productRef.path, 'update');
+            reject(error);
+          });
+      } else { // Create new product
+        const id = `${data.name.toLowerCase().replace(/\s+/g, '-')}-${uuidv4().split('-')[0]}`;
+        const productRef = doc(firestore, 'products', id);
+        const newProductData = { ...finalProductData, id };
+        setDoc(productRef, newProductData)
+          .then(() => {
+            handleSuccess(data.name, 'created');
+            resolve();
+          })
+          .catch((error) => {
+            handleFirestoreError(error, productRef.path, 'create');
+            reject(error);
+          });
+      }
+    });
   };
 
   return (
