@@ -15,6 +15,28 @@ const GoogleIcon = () => (
     </svg>
 );
 
+function getFriendlyAuthErrorMessage(errorCode?: string): string {
+    switch (errorCode) {
+        case 'auth/invalid-email':
+            return 'Please enter a valid email address.';
+        case 'auth/user-not-found':
+        case 'auth/wrong-password':
+        case 'auth/invalid-credential':
+            return 'Invalid email or password. Please try again.';
+        case 'auth/email-already-in-use':
+            return 'An account with this email address already exists. Please log in.';
+        case 'auth/weak-password':
+            return 'The password is too weak. Please use at least 6 characters.';
+        case 'auth/too-many-requests':
+            return 'Access to this account has been temporarily disabled. Please reset your password or try again later.';
+        case 'auth/popup-closed-by-user':
+        case 'auth/cancelled-popup-request':
+            return 'The sign-in window was closed. Please try again.';
+        default:
+            return 'An unexpected error occurred during sign-in. Please try again.';
+    }
+}
+
 export function GoogleAuthButton() {
     const auth = useAuth();
     const firestore = useFirestore();
@@ -35,8 +57,8 @@ export function GoogleAuthButton() {
 
         try {
             const result = await signInWithPopup(auth, provider);
-            const additionalInfo = getAdditionalUserInfo(result);
             const user = result.user;
+            const additionalInfo = getAdditionalUserInfo(result);
 
             if (additionalInfo?.isNewUser) {
                 const userProfileData = {
@@ -46,18 +68,7 @@ export function GoogleAuthButton() {
                     photoURL: user.photoURL,
                 };
                 const userDocRef = doc(firestore, 'users', user.uid);
-                
-                await setDoc(userDocRef, userProfileData, { merge: true })
-                    .catch((serverError) => {
-                        const permissionError = new FirestorePermissionError({
-                            path: userDocRef.path,
-                            operation: 'create',
-                            requestResourceData: userProfileData,
-                        });
-                        errorEmitter.emit('permission-error', permissionError);
-                        auth.signOut();
-                        throw new Error("Failed to create user profile.");
-                    });
+                await setDoc(userDocRef, userProfileData, { merge: true });
             }
             
             toast({
@@ -68,12 +79,36 @@ export function GoogleAuthButton() {
 
         } catch (error: any) {
             console.error('Google Sign-In Error:', error);
-            const errorMessage = error.code ? error.code.replace('auth/', '').replace(/-/g, ' ') : 'An unexpected error occurred.';
-            toast({
-                variant: 'destructive',
-                title: 'Sign-in failed',
-                description: errorMessage.charAt(0).toUpperCase() + errorMessage.slice(1)
-            });
+            const currentUser = auth.currentUser;
+
+            if (error.code && error.code.startsWith('auth/')) {
+                // This is an authentication error (e.g., popup closed)
+                const errorMessage = getFriendlyAuthErrorMessage(error.code);
+                toast({
+                    variant: 'destructive',
+                    title: 'Sign-in failed',
+                    description: errorMessage
+                });
+            } else {
+                // This is likely a Firestore error from setDoc during new user creation
+                const permissionError = new FirestorePermissionError({
+                    path: currentUser ? `users/${currentUser.uid}` : '/users/unknown',
+                    operation: 'create',
+                    requestResourceData: { note: 'Google sign-in profile creation' },
+                });
+                errorEmitter.emit('permission-error', permissionError);
+
+                toast({
+                    variant: 'destructive',
+                    title: 'Sign-in failed',
+                    description: 'Your account was created, but we failed to save your profile. Please try again.'
+                });
+
+                // Attempt to clean up the orphaned user from Firebase Auth
+                if (currentUser) {
+                    await currentUser.delete();
+                }
+            }
         }
     };
 

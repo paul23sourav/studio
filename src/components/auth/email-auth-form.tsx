@@ -75,47 +75,73 @@ export function EmailAuthForm({ mode }: EmailAuthFormProps) {
         }
         setLoading(true);
 
-        try {
-            if (mode === 'signup') {
-                const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-                const user = userCredential.user;
-
-                const userProfileData = {
-                    uid: user.uid,
-                    email: user.email,
-                    displayName: user.email,
-                    photoURL: null,
-                };
-                const userDocRef = doc(firestore, 'users', user.uid);
-                
-                await setDoc(userDocRef, userProfileData)
-                    .catch((serverError) => {
-                        const permissionError = new FirestorePermissionError({
-                            path: userDocRef.path,
-                            operation: 'create',
-                            requestResourceData: userProfileData,
-                        });
-                        errorEmitter.emit('permission-error', permissionError);
-                        auth.signOut();
-                        throw new Error("Failed to create user profile.");
-                    });
-                
-                toast({ title: 'Account created successfully!' });
-                router.push('/');
-
-            } else { // login
+        if (mode === 'login') {
+            try {
                 await signInWithEmailAndPassword(auth, data.email, data.password);
                 toast({ title: 'Signed in successfully!' });
                 router.push('/');
+            } catch (error: any) {
+                console.error(`Login error:`, error);
+                const errorMessage = getFriendlyAuthErrorMessage(error.code);
+                toast({
+                    variant: 'destructive',
+                    title: 'Sign in failed',
+                    description: errorMessage
+                });
+            } finally {
+                setLoading(false);
             }
+            return;
+        }
+
+        // Signup mode
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+            const user = userCredential.user;
+
+            const userProfileData = {
+                uid: user.uid,
+                email: user.email,
+                displayName: user.email,
+                photoURL: null,
+            };
+            const userDocRef = doc(firestore, 'users', user.uid);
+            
+            await setDoc(userDocRef, userProfileData);
+            
+            toast({ title: 'Account created successfully!' });
+            router.push('/');
+
         } catch (error: any) {
-            console.error(`${mode} error:`, error);
-            const errorMessage = getFriendlyAuthErrorMessage(error.code);
-            toast({
-                variant: 'destructive',
-                title: `${mode === 'signup' ? 'Sign up' : 'Sign in'} failed`,
-                description: errorMessage
-            });
+            console.error(`Signup error:`, error);
+            const currentUser = auth.currentUser;
+
+            if (error.code && error.code.startsWith('auth/')) {
+                const errorMessage = getFriendlyAuthErrorMessage(error.code);
+                toast({
+                    variant: 'destructive',
+                    title: 'Sign up failed',
+                    description: errorMessage
+                });
+            } else {
+                // This is likely a Firestore error
+                const permissionError = new FirestorePermissionError({
+                    path: currentUser ? `users/${currentUser.uid}` : '/users/unknown',
+                    operation: 'create',
+                    requestResourceData: { note: 'Email sign-up profile creation' },
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                toast({
+                    variant: 'destructive',
+                    title: 'Sign up failed',
+                    description: 'Could not save your user profile. Please try again.'
+                });
+
+                // Clean up the orphaned user
+                if (currentUser) {
+                    await currentUser.delete();
+                }
+            }
         } finally {
             setLoading(false);
         }
