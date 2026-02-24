@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, Dispatch, SetStateAction } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -13,13 +13,14 @@ import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 
 interface Upload {
+  id: string; // Use an ID for reliable progress tracking
   file: File;
   progress: number;
 }
 
 interface ImageUploaderProps {
   existingImageUrls?: string[];
-  onImageUrlsChange: (urls: string[]) => void;
+  onImageUrlsChange: Dispatch<SetStateAction<string[]>>;
 }
 
 export default function ImageUploader({ existingImageUrls = [], onImageUrlsChange }: ImageUploaderProps) {
@@ -29,8 +30,7 @@ export default function ImageUploader({ existingImageUrls = [], onImageUrlsChang
   const [isUploading, setIsUploading] = useState(false);
 
   const handleRemoveImage = (urlToRemove: string) => {
-    const newUrls = existingImageUrls.filter(url => url !== urlToRemove);
-    onImageUrlsChange(newUrls);
+    onImageUrlsChange((prevUrls) => prevUrls.filter((url) => url !== urlToRemove));
   };
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
@@ -46,7 +46,7 @@ export default function ImageUploader({ existingImageUrls = [], onImageUrlsChang
     }
 
     setIsUploading(true);
-    const newUploads: Upload[] = acceptedFiles.map(file => ({ file, progress: 0 }));
+    const newUploads: Upload[] = acceptedFiles.map(file => ({ id: uuidv4(), file, progress: 0 }));
     setUploads(newUploads);
     
     const uploadPromises = newUploads.map(async (upload) => {
@@ -60,7 +60,7 @@ export default function ImageUploader({ existingImageUrls = [], onImageUrlsChang
             const url = await uploadFile(storage, upload.file, filePath, (p) => {
                 setUploads(prev => 
                     prev.map(u => 
-                        u.file.name === upload.file.name && u.file.size === upload.file.size 
+                        u.id === upload.id
                         ? {...u, progress: p} 
                         : u
                     )
@@ -68,14 +68,13 @@ export default function ImageUploader({ existingImageUrls = [], onImageUrlsChang
             });
             return url;
         } catch (error) {
-            // This error will be caught by the outer Promise.all handler
             throw error;
         }
     });
 
     try {
         const newUrls = await Promise.all(uploadPromises);
-        onImageUrlsChange([...existingImageUrls, ...newUrls]);
+        onImageUrlsChange(prevUrls => [...prevUrls, ...newUrls]);
         toast({
             title: 'Images uploaded',
             description: `${newUrls.length} image(s) have been successfully uploaded.`,
@@ -91,7 +90,7 @@ export default function ImageUploader({ existingImageUrls = [], onImageUrlsChang
         setIsUploading(false);
         setUploads([]);
     }
-  }, [storage, existingImageUrls, onImageUrlsChange, toast]);
+  }, [storage, onImageUrlsChange, toast]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
     onDrop,
@@ -122,10 +121,10 @@ export default function ImageUploader({ existingImageUrls = [], onImageUrlsChang
         </div>
       </div>
       
-      {isUploading && (
+      {uploads.length > 0 && (
         <div className="space-y-4">
-            {uploads.map((upload, index) => (
-              <div key={`${upload.file.name}-${index}`} className="space-y-1">
+            {uploads.map((upload) => (
+              <div key={upload.id} className="space-y-1">
                   <div className="flex justify-between items-center text-sm">
                     <Label className="truncate max-w-[200px] sm:max-w-xs">{upload.file.name}</Label>
                     <span className="text-muted-foreground">{Math.round(upload.progress)}%</span>
