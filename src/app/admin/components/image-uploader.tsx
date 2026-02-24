@@ -3,23 +3,13 @@
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Button } from '@/components/ui/button';
-import { X, UploadCloud, File, CheckCircle2, AlertCircle } from 'lucide-react';
+import { X, UploadCloud } from 'lucide-react';
 import Image from 'next/image';
 import { v4 as uuidv4 } from 'uuid';
 import { useStorage } from '@/firebase';
-import { uploadFileResumable } from '@/firebase/storage';
+import { uploadFile } from '@/firebase/storage';
 import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
-
-type UploadStatus = 'pending' | 'uploading' | 'success' | 'error';
-
-interface Upload {
-  id: string;
-  file: File;
-  status: UploadStatus;
-  progress: number;
-  error?: string;
-}
+import { useToast } from '@/hooks/use-toast';
 
 function getFirebaseErrorMessage(error: any): string {
     if (error && typeof error === 'object' && 'code' in error) {
@@ -49,64 +39,81 @@ export default function ImageUploader({
     onUploadStateChange: (isUploading: boolean) => void;
 }) {
   const storage = useStorage();
-  const [uploads, setUploads] = useState<Upload[]>([]);
+  const { toast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    if (!storage || isUploading) return;
+    if (!storage || isUploading || acceptedFiles.length === 0) return;
 
-    const newUploads: Upload[] = acceptedFiles.map(file => ({
-      id: uuidv4(),
-      file,
-      status: 'pending',
-      progress: 0,
-    }));
-    
-    setUploads(prev => [...prev, ...newUploads]);
     setIsUploading(true);
     onUploadStateChange(true);
 
-    for (const upload of newUploads) {
-        setUploads(prev => prev.map(u => u.id === upload.id ? { ...u, status: 'uploading' } : u));
-        
-        try {
-            const uniqueId = uuidv4();
-            const fileExtension = upload.file.name.split('.').pop();
-            const fileName = `${uniqueId}.${fileExtension}`;
-            const filePath = `products/${fileName}`;
-            
-            const downloadURL = await uploadFileResumable(
-                storage,
-                upload.file,
-                filePath,
-                (progress) => {
-                    setUploads(prev => prev.map(u => u.id === upload.id ? { ...u, progress } : u));
-                }
-            );
+    let successCount = 0;
+    let errorCount = 0;
+    
+    const uploadPromises = acceptedFiles.map(file => {
+        const uniqueId = uuidv4();
+        const fileExtension = file.name.split('.').pop();
+        const fileName = `${uniqueId}.${fileExtension}`;
+        const filePath = `products/${fileName}`;
+        return uploadFile(storage, file, filePath);
+    });
 
-            onImageUrlsChange(prevUrls => [...prevUrls, downloadURL]);
-            setUploads(prev => prev.map(u => u.id === upload.id ? { ...u, status: 'success' } : u));
+    try {
+        const results = await Promise.allSettled(uploadPromises);
 
-        } catch (error) {
-            const errorMessage = getFirebaseErrorMessage(error);
-            console.error(`Upload failed for ${upload.file.name}:`, error);
-            setUploads(prev => prev.map(u => u.id === upload.id ? { ...u, status: 'error', error: errorMessage } : u));
+        const newImageUrls: string[] = [];
+        results.forEach((result, index) => {
+            if (result.status === 'fulfilled') {
+                newImageUrls.push(result.value);
+                successCount++;
+            } else {
+                errorCount++;
+                const fileName = acceptedFiles[index].name;
+                const errorMessage = getFirebaseErrorMessage(result.reason);
+                console.error(`Failed to upload ${fileName}:`, result.reason);
+                toast({
+                    variant: "destructive",
+                    title: `Upload Failed: ${fileName}`,
+                    description: errorMessage,
+                });
+            }
+        });
+
+        if (newImageUrls.length > 0) {
+            onImageUrlsChange(prevUrls => [...prevUrls, ...newImageUrls]);
         }
+
+    } catch (error) {
+        console.error("An unexpected error occurred during the upload process:", error);
+        toast({
+            variant: "destructive",
+            title: "Upload Process Error",
+            description: "An unexpected error occurred. Please check the console.",
+        });
+    } finally {
+        if (errorCount > 0) {
+           toast({
+                title: "Upload Complete",
+                description: `${successCount} file(s) uploaded successfully, ${errorCount} failed.`,
+            });
+        } else if (successCount > 0) {
+            toast({
+                title: "Upload Successful",
+                description: `All ${successCount} file(s) have been uploaded.`,
+            });
+        }
+
+        setIsUploading(false);
+        onUploadStateChange(false);
     }
 
-    setIsUploading(false);
-    onUploadStateChange(false);
-
-  }, [storage, isUploading, onImageUrlsChange, onUploadStateChange]);
+  }, [storage, isUploading, onImageUrlsChange, onUploadStateChange, toast]);
 
 
   const handleRemoveImage = (urlToRemove: string) => {
     onImageUrlsChange((prevUrls) => prevUrls.filter((url) => url !== urlToRemove));
   };
-
-  const handleRemoveUpload = (idToRemove: string) => {
-      setUploads(prev => prev.filter(u => u.id !== idToRemove));
-  }
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
     onDrop,
@@ -156,48 +163,6 @@ export default function ImageUploader({
                     </Button>
                 </div>
             ))}
-            </div>
-        </div>
-      )}
-
-      {uploads.length > 0 && (
-        <div className="space-y-2">
-            <Label>Uploads</Label>
-            <div className="space-y-4">
-                {uploads.map(upload => (
-                    <div key={upload.id} className="flex items-center gap-4 p-2 border rounded-lg">
-                        <File className="h-8 w-8 text-muted-foreground"/>
-                        <div className="flex-1">
-                            <p className="text-sm font-medium truncate">{upload.file.name}</p>
-                            {upload.status === 'uploading' && (
-                                <Progress value={upload.progress} className="h-2 mt-1" />
-                            )}
-                            {upload.status === 'error' && (
-                                <p className="text-xs text-destructive">{upload.error}</p>
-                            )}
-                        </div>
-                        {upload.status === 'uploading' && (
-                           <p className="text-sm font-medium">{Math.round(upload.progress)}%</p>
-                        )}
-                        {upload.status === 'success' && (
-                            <CheckCircle2 className="h-5 w-5 text-green-500"/>
-                        )}
-                        {upload.status === 'error' && (
-                            <AlertCircle className="h-5 w-5 text-destructive"/>
-                        )}
-                        {(upload.status === 'pending' || upload.status === 'success' || upload.status === 'error') && (
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6 rounded-full"
-                                onClick={() => handleRemoveUpload(upload.id)}
-                            >
-                                <X className="h-4 w-4" />
-                                <span className="sr-only">Remove from list</span>
-                            </Button>
-                        )}
-                    </div>
-                ))}
             </div>
         </div>
       )}
