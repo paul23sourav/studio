@@ -49,52 +49,60 @@ export default function ImageUploader({ existingImageUrls = [], onImageUrlsChang
     const newUploads: Upload[] = acceptedFiles.map(file => ({ id: uuidv4(), file, progress: 0 }));
     setUploads(newUploads);
     
-    const uploadPromises = newUploads.map(upload => {
-        const uniqueId = uuidv4();
-        const nameParts = upload.file.name.split('.');
-        const fileExtension = nameParts.length > 1 ? `.${nameParts.pop()}` : '';
-        const fileName = `${uniqueId}${fileExtension}`;
-        const filePath = `products/${fileName}`;
-        
-        return uploadFile(storage, upload.file, filePath, (progress) => {
-            setUploads(prev => 
-                prev.map(u => 
-                    u.id === upload.id
-                    ? {...u, progress } 
-                    : u
-                )
-            );
-        });
-    });
+    try {
+      const uploadPromises = newUploads.map(upload => {
+          const uniqueId = uuidv4();
+          const nameParts = upload.file.name.split('.');
+          const fileExtension = nameParts.length > 1 ? `.${nameParts.pop()}` : '';
+          const fileName = `${uniqueId}${fileExtension}`;
+          const filePath = `products/${fileName}`;
+          
+          return uploadFile(storage, upload.file, filePath, (progress) => {
+              setUploads(prev => 
+                  prev.map(u => 
+                      u.id === upload.id
+                      ? {...u, progress } 
+                      : u
+                  )
+              );
+          });
+      });
 
-    const results = await Promise.allSettled(uploadPromises);
+      const results = await Promise.allSettled(uploadPromises);
 
-    const successfulUrls = results
-        .filter((res): res is PromiseFulfilledResult<string> => res.status === 'fulfilled')
-        .map(res => res.value);
-    
-    const failedCount = results.length - successfulUrls.length;
+      const successfulUrls = results
+          .filter((res): res is PromiseFulfilledResult<string> => res.status === 'fulfilled')
+          .map(res => res.value);
+      
+      const failedCount = results.length - successfulUrls.length;
 
-    if (successfulUrls.length > 0) {
-        onImageUrlsChange(prevUrls => [...prevUrls, ...successfulUrls]);
+      if (successfulUrls.length > 0) {
+          onImageUrlsChange(prevUrls => [...prevUrls, ...successfulUrls]);
+      }
+
+      if (failedCount > 0) {
+          toast({
+              variant: 'destructive',
+              title: 'Upload issue',
+              description: `${failedCount} image(s) failed to upload. Please check permissions and try again.`,
+          });
+      } else if (successfulUrls.length > 0) {
+          toast({
+              title: 'Images uploaded',
+              description: `${successfulUrls.length} image(s) have been successfully uploaded.`,
+          });
+      }
+    } catch (error) {
+      console.error("An unexpected error occurred during upload setup:", error);
+      toast({
+        variant: "destructive",
+        title: "Upload Failed",
+        description: "A critical error occurred before uploads could start. Please check the console."
+      })
+    } finally {
+      setIsUploading(false);
+      setUploads([]);
     }
-
-    if (failedCount > 0) {
-        toast({
-            variant: 'destructive',
-            title: 'Upload issue',
-            description: `${failedCount} image(s) failed to upload. ${successfulUrls.length} succeeded.`,
-        });
-    } else if (successfulUrls.length > 0) {
-        toast({
-            title: 'Images uploaded',
-            description: `${successfulUrls.length} image(s) have been successfully uploaded.`,
-        });
-    }
-   
-    setIsUploading(false);
-    setUploads([]);
-
   }, [storage, onImageUrlsChange, toast]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
