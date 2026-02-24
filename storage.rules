@@ -1,25 +1,15 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-
-    // Helper functions consistent with firestore.rules
-    function isAuth() {
-      return request.auth != null;
-    }
-
-    function isDevAdmin() {
-      return isAuth() && (request.auth.token.email == 'paulspshubham94@gmail.com' || request.auth.token.email == 'paul23sourav@gmail.com');
-    }
-
-    function isAdmin() {
-      return isAuth() && (request.auth.token.admin == true || isDevAdmin());
-    }
-
-    // Product images can be read by anyone, but only written by admins.
-    // This also enforces that uploaded files are images and are less than 5MB.
+    // Product images can be read by anyone.
+    // Writes (uploads, updates, deletes) are only allowed for authenticated users
+    // who are either dev admins or have the 'admin' custom claim.
     match /products/{imageName} {
       allow read: if true;
-      allow write: if isAdmin() &&
+      allow write: if request.auth != null &&
+                      (request.auth.token.admin == true ||
+                       request.auth.token.email == 'paulspshubham94@gmail.com' ||
+                       request.auth.token.email == 'paul23sourav@gmail.com') &&
                       request.resource.size < 5 * 1024 * 1024 &&
                       request.resource.contentType.matches('image/.*');
     }
