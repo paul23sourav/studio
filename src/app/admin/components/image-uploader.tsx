@@ -7,7 +7,7 @@ import { X, UploadCloud } from 'lucide-react';
 import Image from 'next/image';
 import { v4 as uuidv4 } from 'uuid';
 import { useStorage } from '@/firebase';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 
@@ -56,78 +56,46 @@ export default function ImageUploader({
 
     setIsUploading(true);
     onUploadStateChange(true);
-
-    const uploadPromises = acceptedFiles.map(file => {
-      return new Promise<string>((resolve, reject) => {
-        const uniqueId = uuidv4();
-        const fileExtension = file.name.split('.').pop();
-        const fileName = `${uniqueId}.${fileExtension}`;
-        const filePath = `products/${fileName}`;
-        const storageRef = ref(storage, filePath);
-        const uploadTask = uploadBytesResumable(storageRef, file);
-
-        uploadTask.on('state_changed',
-          (snapshot) => { /* Optional: Handle progress */ },
-          (error) => {
-            // This is the Firebase SDK's error handler
-            console.error(`Upload failed for ${file.name}:`, error);
-            const friendlyMessage = getFirebaseStorageErrorMessage(error);
-            toast({
-              variant: 'destructive',
-              title: `Upload Failed: ${file.name}`,
-              description: friendlyMessage,
-              duration: 10000,
-            });
-            reject(new Error(friendlyMessage));
-          },
-          async () => {
-            // Upload completed successfully
-            try {
-              const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-              resolve(downloadURL);
-            } catch (error) {
-              console.error(`Failed to get download URL for ${file.name}:`, error);
-              const friendlyMessage = getFirebaseStorageErrorMessage(error);
-               toast({
-                variant: 'destructive',
-                title: `Could Not Get URL for ${file.name}`,
-                description: friendlyMessage,
-                duration: 10000,
-              });
-              reject(new Error(friendlyMessage));
-            }
-          }
-        );
-      });
+    
+    toast({
+      title: `Uploading ${acceptedFiles.length} file(s)...`,
+      description: 'Your upload has started.',
     });
 
-    const allUploadsPromise = Promise.all(uploadPromises);
+    const uploadPromises = acceptedFiles.map(async (file) => {
+      const uniqueId = uuidv4();
+      const fileExtension = file.name.split('.').pop();
+      const fileName = `${uniqueId}.${fileExtension}`;
+      const filePath = `products/${fileName}`;
+      const storageRef = ref(storage, filePath);
 
-    const timeoutPromise = new Promise<string[]>((_, reject) =>
-      setTimeout(() => {
-        reject(new Error('Upload timed out after 15 seconds. This is most likely due to a CORS configuration issue on your Cloud Storage bucket.'));
-      }, 15000)
-    );
+      try {
+        const snapshot = await uploadBytes(storageRef, file);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        return downloadURL;
+      } catch (error: any) {
+        console.error(`Upload failed for ${file.name}:`, error);
+        const friendlyMessage = getFirebaseStorageErrorMessage(error);
+        toast({
+          variant: 'destructive',
+          title: `Upload Failed: ${file.name}`,
+          description: friendlyMessage,
+          duration: 10000,
+        });
+        throw new Error(friendlyMessage); // Propagate error to Promise.all
+      }
+    });
 
     try {
-      toast({
-        title: `Uploading ${acceptedFiles.length} file(s)...`,
-        description: 'Your upload has started.',
-      });
-      const uploadedUrls = await Promise.race([allUploadsPromise, timeoutPromise]);
+      const uploadedUrls = await Promise.all(uploadPromises);
       onImageUrlsChange(prevUrls => [...prevUrls, ...uploadedUrls]);
       toast({
         title: 'Upload Successful',
         description: `${acceptedFiles.length} file(s) have been uploaded.`,
       });
-    } catch (error: any) {
-      console.error("Upload process failed:", error);
-      toast({
-        variant: 'destructive',
-        title: 'Upload Failed',
-        description: error.message || 'An unexpected error occurred.',
-        duration: 10000
-      });
+    } catch (error) {
+      console.error("One or more uploads failed.", error);
+      // Individual toasts are already shown, so no need for another general one.
     } finally {
       setIsUploading(false);
       onUploadStateChange(false);
