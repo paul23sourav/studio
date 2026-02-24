@@ -66,7 +66,7 @@ export default function ImageUploader({
         });
 
         const timeoutPromise = new Promise<string>((_, reject) =>
-            setTimeout(() => reject(new Error('Connection timed out after 5 seconds. Please check your network configuration (firewall, proxy).')), 5000)
+            setTimeout(() => reject(new Error('Connection timed out after 5 seconds. This may be due to a network issue or a Google Cloud project configuration problem. Please ensure the Firebase Storage API is enabled and a billing account is linked to your project in the Google Cloud Console.')), 5000)
         );
 
         const downloadURL = await Promise.race([uploadPromise, timeoutPromise]);
