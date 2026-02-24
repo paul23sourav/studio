@@ -74,17 +74,42 @@ export default function ImageUploader({ existingImageUrls = [], onImageUrlsChang
           .filter((res): res is PromiseFulfilledResult<string> => res.status === 'fulfilled')
           .map(res => res.value);
       
-      const failedCount = results.length - successfulUrls.length;
+      const failedResults = results.filter((res): res is PromiseRejectedResult => res.status === 'rejected');
 
       if (successfulUrls.length > 0) {
           onImageUrlsChange(prevUrls => [...prevUrls, ...successfulUrls]);
       }
 
-      if (failedCount > 0) {
+      if (failedResults.length > 0) {
+          failedResults.forEach(result => {
+              console.error("Firebase Storage Upload Failed:", result.reason);
+          });
+
+          const firstError = failedResults[0].reason;
+          let errorMessage = "An unknown error occurred during upload.";
+
+          if (firstError && typeof firstError === 'object' && 'code' in firstError) {
+              switch (firstError.code) {
+                  case 'storage/unauthorized':
+                      errorMessage = "Permission denied. Check your Firebase Storage security rules to ensure you have write access.";
+                      break;
+                  case 'storage/object-not-found':
+                      errorMessage = "File not found. This is an unexpected error during upload.";
+                      break;
+                  case 'storage/canceled':
+                      errorMessage = "The upload was canceled.";
+                      break;
+                  default:
+                      errorMessage = (firstError as any).message || "An unknown Firebase Storage error occurred.";
+              }
+          } else if (firstError instanceof Error) {
+            errorMessage = firstError.message;
+          }
+
           toast({
               variant: 'destructive',
-              title: 'Upload issue',
-              description: `${failedCount} image(s) failed to upload. Please check permissions and try again.`,
+              title: `${failedResults.length} image(s) failed to upload`,
+              description: errorMessage,
           });
       } else if (successfulUrls.length > 0) {
           toast({
@@ -93,11 +118,11 @@ export default function ImageUploader({ existingImageUrls = [], onImageUrlsChang
           });
       }
     } catch (error) {
-      console.error("An unexpected error occurred during upload setup:", error);
+      console.error("A critical error occurred during the upload process:", error);
       toast({
         variant: "destructive",
         title: "Upload Failed",
-        description: "A critical error occurred before uploads could start. Please check the console."
+        description: "A critical error occurred before uploads could complete. Please check the console."
       })
     } finally {
       setIsUploading(false);
