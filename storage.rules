@@ -2,25 +2,19 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    
-    // The isDevAdmin function grants admin rights to specific developer accounts.
-    function isDevAdmin() {
-      return request.auth != null && (request.auth.token.email == 'paulspshubham94@gmail.com' || request.auth.token.email == 'paul23sourav@gmail.com');
-    }
-    
-    // The isAdmin function checks for either a custom 'admin' claim or if the user is a dev admin.
-    function isAdmin() {
-      return request.auth != null && (request.auth.token.admin == true || isDevAdmin());
-    }
 
     // Allow public read access to all files.
     match /{allPaths=**} {
       allow read: if true;
     }
 
-    // Restrict write access to the 'products' folder to admins only.
+    // Admins can create, update, and delete product images.
     match /products/{imageName} {
-      allow write: if isAdmin();
+      allow create, update, delete: if request.auth != null && (
+        request.auth.token.admin == true ||
+        request.auth.token.email == 'paulspshubham94@gmail.com' ||
+        request.auth.token.email == 'paul23sourav@gmail.com'
+      );
     }
   }
 }
