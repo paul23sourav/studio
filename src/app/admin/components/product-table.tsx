@@ -117,8 +117,17 @@ export default function ProductTable() {
     try {
       if (productToDelete.imageUrls && productToDelete.imageUrls.length > 0) {
         const deleteImagePromises = productToDelete.imageUrls.map(url => {
-            const imageRef = ref(storage, url);
-            return deleteObject(imageRef);
+            // Reconstruct the path from the URL to create a valid StorageReference
+            const urlObject = new URL(url);
+            // Pathname is like /v0/b/bucket/o/products%2Fimage.jpg
+            const pathSegments = urlObject.pathname.split('/o/');
+            if (pathSegments.length > 1) {
+              const encodedPath = pathSegments[1];
+              const decodedPath = decodeURIComponent(encodedPath);
+              const imageRef = ref(storage, decodedPath);
+              return deleteObject(imageRef);
+            }
+            return Promise.resolve(); // Or reject if path is invalid
         });
         await Promise.all(deleteImagePromises);
       }
