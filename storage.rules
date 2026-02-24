@@ -1,15 +1,25 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // Match any file in the 'products' directory
-    match /products/{imageName} {
-      // Allow anyone to read product images.
-      // This is necessary for the public storefront to display product pictures.
-      allow read: if true;
 
-      // Allow write (create, update, delete) operations only for authenticated admins.
-      // This rule also enforces that uploaded files are images and are less than 5MB.
-      allow write: if request.auth != null && request.auth.token.admin == true &&
+    // Helper functions consistent with firestore.rules
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function isDevAdmin() {
+      return isAuth() && (request.auth.token.email == 'paulspshubham94@gmail.com' || request.auth.token.email == 'paul23sourav@gmail.com');
+    }
+
+    function isAdmin() {
+      return isAuth() && (request.auth.token.admin == true || isDevAdmin());
+    }
+
+    // Product images can be read by anyone, but only written by admins.
+    // This also enforces that uploaded files are images and are less than 5MB.
+    match /products/{imageName} {
+      allow read: if true;
+      allow write: if isAdmin() &&
                       request.resource.size < 5 * 1024 * 1024 &&
                       request.resource.contentType.matches('image/.*');
     }
