@@ -66,36 +66,36 @@ export default function ImageUploader({
       
       toast({
         title: `Uploading ${file.name}...`,
-        description: 'Please wait.',
+        description: 'Establishing connection...',
       });
 
-      try {
-        const storageRef = ref(storage, filePath);
-        const uploadTask = uploadBytesResumable(storageRef, file);
+      const storageRef = ref(storage, filePath);
+      const uploadTask = uploadBytesResumable(storageRef, file);
 
-        const downloadURL = await new Promise<string>((resolve, reject) => {
-          uploadTask.on(
-            'state_changed',
-            (snapshot) => {
-              // Optional: monitor progress
-            },
-            (error) => {
-              // This is the crucial part: on any error, we reject the promise.
-              console.error(`Upload failed for ${file.name}:`, error);
-              reject(error);
-            },
-            async () => {
-              // On success, we get the download URL and resolve the promise.
-              try {
-                const url = await getDownloadURL(uploadTask.snapshot.ref);
-                resolve(url);
-              } catch (getUrlError) {
-                console.error(`Failed to get download URL for ${file.name}:`, getUrlError);
-                reject(getUrlError);
-              }
-            }
-          );
+      try {
+        const uploadPromise = new Promise<string>((resolve, reject) => {
+            uploadTask.on('state_changed',
+                (snapshot) => { 
+                  // In a real app, you might update a progress bar here.
+                  // For this implementation, we use it to confirm the connection is active.
+                 },
+                (error) => reject(error),
+                async () => {
+                    try {
+                        const url = await getDownloadURL(uploadTask.snapshot.ref);
+                        resolve(url);
+                    } catch (e) {
+                        reject(e);
+                    }
+                }
+            );
         });
+
+        const timeoutPromise = new Promise<string>((_, reject) =>
+            setTimeout(() => reject(new Error('Connection timed out after 5 seconds. Please check your network.')), 5000)
+        );
+
+        const downloadURL = await Promise.race([uploadPromise, timeoutPromise]);
 
         uploadedUrls.push(downloadURL);
         toast({
@@ -103,6 +103,7 @@ export default function ImageUploader({
           description: `${file.name} has been uploaded.`,
         });
       } catch (error) {
+        uploadTask.cancel(); // Clean up the upload task if the race fails (timeout or real error)
         const errorMessage = getFirebaseErrorMessage(error);
         console.error(`Caught upload error for ${file.name}:`, error);
         toast({
