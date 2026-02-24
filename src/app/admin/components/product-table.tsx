@@ -113,46 +113,30 @@ export default function ProductTable() {
 
     setIsDeleting(true);
 
-    // Step 1: Delete images from Storage
-    try {
-      if (productToDelete.imageUrls && productToDelete.imageUrls.length > 0) {
-        const deleteImagePromises = productToDelete.imageUrls.map(url => {
-            // Reconstruct the path from the URL to create a valid StorageReference
-            const urlObject = new URL(url);
-            // Pathname is like /v0/b/bucket/o/products%2Fimage.jpg
-            const pathSegments = urlObject.pathname.split('/o/');
-            if (pathSegments.length > 1) {
-              const encodedPath = pathSegments[1];
-              const decodedPath = decodeURIComponent(encodedPath);
-              const imageRef = ref(storage, decodedPath);
-              return deleteObject(imageRef);
-            }
-            return Promise.resolve(); // Or reject if path is invalid
-        });
-        await Promise.all(deleteImagePromises);
-      }
-    } catch (storageError: any) {
-        console.error("Failed to delete product images from Storage", storageError);
-        toast({
-            variant: 'destructive',
-            title: 'Storage Permission Denied',
-            description: 'Could not delete product images. Please check storage rules.',
-        });
-        setIsDeleting(false);
-        setIsDeleteDialogOpen(false);
-        setProductToDelete(null);
-        return; // Stop execution
-    }
+    const productRef = doc(firestore, 'products', productToDelete.id);
 
-    // Step 2: Delete document from Firestore
     try {
-        const productRef = doc(firestore, 'products', productToDelete.id);
         await deleteDoc(productRef);
-
         toast({
             title: 'Product deleted',
-            description: `"${productToDelete.name}" has been successfully deleted.`,
+            description: `"${productToDelete.name}" database entry has been removed.`,
         });
+
+        // After successful deletion from Firestore, delete images from Storage
+        if (productToDelete.imageUrls && productToDelete.imageUrls.length > 0) {
+            toast({ title: 'Deleting images...' });
+            const deleteImagePromises = productToDelete.imageUrls.map(url => {
+                try {
+                    const imageRef = ref(storage, url);
+                    return deleteObject(imageRef);
+                } catch (error) {
+                    console.error('Could not create storage reference for deletion:', error);
+                    return Promise.resolve(); // Don't block other deletions
+                }
+            });
+            await Promise.all(deleteImagePromises);
+            toast({ title: 'Associated images deleted.' });
+        }
     } catch (firestoreError: any) {
         console.error("Failed to delete product from Firestore", firestoreError);
         const permissionError = new FirestorePermissionError({
@@ -160,11 +144,6 @@ export default function ProductTable() {
             operation: 'delete',
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({
-            variant: 'destructive',
-            title: 'Firestore Permission Denied',
-            description: 'You do not have permission to delete this product data.',
-        });
     } finally {
         setIsDeleting(false);
         setIsDeleteDialogOpen(false);

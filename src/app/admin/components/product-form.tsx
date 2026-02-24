@@ -87,8 +87,40 @@ export default function ProductForm({ product }: ProductFormProps) {
     }
   }, [currency, basePriceUsd, setValue]);
 
+  const deleteUnusedImages = async (originalUrls: string[], currentUrls: string[]) => {
+    if (!storage) return;
+    const urlsToDelete = originalUrls.filter(url => !currentUrls.includes(url));
+    if (urlsToDelete.length === 0) return;
+
+    toast({ title: `Deleting ${urlsToDelete.length} old image(s)...` });
+
+    const deletePromises = urlsToDelete.map(url => {
+        try {
+            const imageRef = ref(storage, url);
+            return deleteObject(imageRef);
+        } catch (error) {
+            console.error("Error creating reference to delete image:", error);
+            // This might happen if the URL is malformed, but we'll try to continue
+            return Promise.resolve();
+        }
+    });
+
+    await Promise.all(deletePromises)
+        .then(() => {
+            toast({ title: "Old images deleted." });
+        })
+        .catch(error => {
+            console.error("Failed to delete one or more old images", error);
+            toast({
+                variant: 'destructive',
+                title: 'Error Deleting Images',
+                description: 'Could not delete some of the old product images. You may need to remove them manually from Firebase Storage.'
+            });
+        });
+  };
+
   const onSubmit = async (data: ProductFormData) => {
-    if (!firestore || !storage) {
+    if (!firestore) {
       toast({ variant: 'destructive', title: 'Firebase not available' });
       return;
     }
@@ -130,71 +162,31 @@ export default function ProductForm({ product }: ProductFormProps) {
         requestResourceData: finalProductData,
       });
       errorEmitter.emit('permission-error', permissionError);
-      toast({
-        variant: "destructive",
-        title: 'Permission Denied',
-        description: `You do not have permission to ${operation} this product.`,
-      });
     };
 
-    // First, handle deleting any old images if we are updating a product
-    if (product) {
-        const originalUrls = product.imageUrls || [];
-        const urlsToDelete = originalUrls.filter(url => !imageUrls.includes(url));
-        if (urlsToDelete.length > 0) {
-            try {
-                const deletePromises = urlsToDelete.map(url => {
-                    const urlObject = new URL(url);
-                    const pathSegments = urlObject.pathname.split('/o/');
-                    if (pathSegments.length > 1) {
-                        const encodedPath = pathSegments[1];
-                        const decodedPath = decodeURIComponent(encodedPath);
-                        const imageRef = ref(storage, decodedPath);
-                        return deleteObject(imageRef);
-                    }
-                    return Promise.resolve();
-                });
-                await Promise.all(deletePromises);
-            } catch (storageError) {
-                console.error("Failed to delete product images from Storage", storageError);
-                toast({
-                    variant: 'destructive',
-                    title: 'Storage Error',
-                    description: 'Could not delete old product images. The product was not saved.',
-                });
-                throw storageError; // Prevent form submission from completing
-            }
-        }
+    if (product) { // Update existing product
+      const productRef = doc(firestore, 'products', product.id);
+      updateDoc(productRef, finalProductData)
+        .then(() => {
+          handleSuccess(data.name, 'updated');
+          // Clean up old images after successful Firestore update
+          deleteUnusedImages(product.imageUrls, finalProductData.imageUrls);
+        })
+        .catch((error) => {
+          handleFirestoreError(error, productRef.path, 'update');
+        });
+    } else { // Create new product
+      const id = `${data.name.toLowerCase().replace(/\s+/g, '-')}-${uuidv4().split('-')[0]}`;
+      const productRef = doc(firestore, 'products', id);
+      const newProductData = { ...finalProductData, id };
+      setDoc(productRef, newProductData)
+        .then(() => {
+          handleSuccess(data.name, 'created');
+        })
+        .catch((error) => {
+          handleFirestoreError(error, productRef.path, 'create');
+        });
     }
-
-    // Now, perform the Firestore operation using the required .then/.catch pattern
-    return new Promise<void>((resolve, reject) => {
-      if (product) { // Update existing product
-        const productRef = doc(firestore, 'products', product.id);
-        updateDoc(productRef, finalProductData)
-          .then(() => {
-            handleSuccess(data.name, 'updated');
-            resolve();
-          })
-          .catch((error) => {
-            handleFirestoreError(error, productRef.path, 'update');
-            reject(error);
-          });
-      } else { // Create new product
-        const id = `${data.name.toLowerCase().replace(/\s+/g, '-')}-${uuidv4().split('-')[0]}`;
-        const productRef = doc(firestore, 'products', id);
-        const newProductData = { ...finalProductData, id };
-        setDoc(productRef, newProductData)
-          .then(() => {
-            handleSuccess(data.name, 'created');
-            resolve();
-          })
-          .catch((error) => {
-            handleFirestoreError(error, productRef.path, 'create');
-            reject(error);
-          });
-      }
-    });
   };
 
   return (

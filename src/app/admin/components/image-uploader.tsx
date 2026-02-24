@@ -58,48 +58,47 @@ export default function ImageUploader({
     onUploadStateChange(true);
     
     toast({
-      title: `Uploading ${acceptedFiles.length} file(s)...`,
-      description: 'Your upload has started.',
+      title: `Starting upload of ${acceptedFiles.length} file(s)...`,
     });
 
-    const uploadPromises = acceptedFiles.map(async (file) => {
-      const uniqueId = uuidv4();
-      const fileExtension = file.name.split('.').pop();
-      const fileName = `${uniqueId}.${fileExtension}`;
-      const filePath = `products/${fileName}`;
-      const storageRef = ref(storage, filePath);
+    const newUrls: string[] = [];
+    let uploadFailed = false;
 
-      try {
-        const snapshot = await uploadBytes(storageRef, file);
-        const downloadURL = await getDownloadURL(snapshot.ref);
-        return downloadURL;
-      } catch (error: any) {
-        console.error(`Upload failed for ${file.name}:`, error);
-        const friendlyMessage = getFirebaseStorageErrorMessage(error);
-        toast({
-          variant: 'destructive',
-          title: `Upload Failed: ${file.name}`,
-          description: friendlyMessage,
-          duration: 10000,
-        });
-        throw new Error(friendlyMessage); // Propagate error to Promise.all
-      }
-    });
+    for (const file of acceptedFiles) {
+        const uniqueId = uuidv4();
+        const fileExtension = file.name.split('.').pop();
+        const fileName = `${uniqueId}.${fileExtension}`;
+        const filePath = `products/${fileName}`;
+        const storageRef = ref(storage, filePath);
 
-    try {
-      const uploadedUrls = await Promise.all(uploadPromises);
-      onImageUrlsChange(prevUrls => [...prevUrls, ...uploadedUrls]);
-      toast({
-        title: 'Upload Successful',
-        description: `${acceptedFiles.length} file(s) have been uploaded.`,
-      });
-    } catch (error) {
-      console.error("One or more uploads failed.", error);
-      // Individual toasts are already shown, so no need for another general one.
-    } finally {
-      setIsUploading(false);
-      onUploadStateChange(false);
+        try {
+            const snapshot = await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(snapshot.ref);
+            newUrls.push(downloadURL);
+            toast({
+                title: 'File Uploaded',
+                description: `${file.name}`,
+            });
+        } catch (error: any) {
+            uploadFailed = true;
+            console.error(`Upload failed for ${file.name}:`, error);
+            const friendlyMessage = getFirebaseStorageErrorMessage(error);
+            toast({
+                variant: 'destructive',
+                title: `Upload Failed: ${file.name}`,
+                description: friendlyMessage,
+                duration: 10000,
+            });
+            break; // Stop uploading remaining files if one fails
+        }
     }
+    
+    if (!uploadFailed) {
+      onImageUrlsChange(prevUrls => [...prevUrls, ...newUrls]);
+    }
+
+    setIsUploading(false);
+    onUploadStateChange(false);
   }, [storage, isUploading, onImageUrlsChange, onUploadStateChange, toast]);
 
 
