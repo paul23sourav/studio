@@ -21,24 +21,24 @@ export function useAdminAuth() {
       return;
     }
     
-    const devAdminEmails = [
-        'paulspshubham94@gmail.com',
-        'paul23sourav@gmail.com'
-    ];
-
-    if (user.email && devAdminEmails.includes(user.email)) {
-        setIsAdmin(true);
-        setLoading(false);
-        return;
-    }
-
-    // Force refresh the token to get the latest custom claims.
+    // Always force refresh the token to get the latest claims and profile info.
+    // This is crucial for ensuring security rules have the most up-to-date data.
     user.getIdTokenResult(true)
       .then((idTokenResult) => {
         const isAdminClaim = !!idTokenResult.claims.admin;
-        setIsAdmin(isAdminClaim);
+        
+        const devAdminEmails = [
+            'paulspshubham94@gmail.com',
+            'paul23sourav@gmail.com'
+        ];
+        // The email in the token is the source of truth for security rules.
+        const userEmail = idTokenResult.token.email; 
+        const isDevAdmin = userEmail ? devAdminEmails.includes(userEmail) : false;
+
+        setIsAdmin(isAdminClaim || isDevAdmin);
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error("Error getting ID token result:", error);
         setIsAdmin(false);
       })
       .finally(() => {
