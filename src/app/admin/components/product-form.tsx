@@ -69,6 +69,7 @@ export default function ProductForm({ product }: ProductFormProps) {
   });
 
   const [imageUrls, setImageUrls] = useState<string[]>(product?.imageUrls ?? []);
+  const [isUploading, setIsUploading] = useState(false);
   const [basePriceUsd] = useState(product?.price);
 
   useEffect(() => {
@@ -169,7 +170,11 @@ export default function ProductForm({ product }: ProductFormProps) {
               <CardTitle>Product Images</CardTitle>
             </CardHeader>
             <CardContent>
-              <ImageUploader existingImageUrls={imageUrls} onImageUrlsChange={setImageUrls} />
+              <ImageUploader 
+                existingImageUrls={imageUrls} 
+                onImageUrlsChange={setImageUrls}
+                onUploadStateChange={setIsUploading}
+              />
             </CardContent>
           </Card>
         </div>
@@ -224,8 +229,8 @@ export default function ProductForm({ product }: ProductFormProps) {
       </div>
       <div className="flex items-center justify-end gap-2 mt-8">
         <Button variant="outline" onClick={() => router.back()}>Cancel</Button>
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Saving...' : 'Save Product'}
+        <Button type="submit" disabled={isSubmitting || isUploading}>
+          {isUploading ? 'Uploading images...' : isSubmitting ? 'Saving...' : 'Save Product'}
         </Button>
       </div>
     </form>
