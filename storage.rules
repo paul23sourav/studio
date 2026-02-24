@@ -3,7 +3,10 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
+    // These rules control access to the 'products' folder.
     match /products/{imageName} {
+      // Allow anyone to read product images.
+      // This is required for the public e-commerce storefront.
       allow read: if true;
 
       // Allow creating/uploading files only if the user is an admin.
