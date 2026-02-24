@@ -11,32 +11,6 @@ import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 
-function getFirebaseErrorMessage(error: any): string {
-    if (error && typeof error === 'object' && 'code' in error && typeof error.code === 'string') {
-        if (error.code.startsWith('storage/')) {
-            const code = error.code.split('/')[1];
-            const friendlyMessage = code.charAt(0).toUpperCase() + code.slice(1).replace(/-/g, ' ');
-
-            switch(code) {
-                case 'unauthorized':
-                    return `Unauthorized: You do not have permission to upload files. Please check Storage Rules in Firebase.`;
-                case 'unauthenticated':
-                    return `Unauthenticated: Your session may have expired. Please try logging out and back in.`;
-                case 'canceled':
-                    return 'The upload was canceled.';
-                case 'quota-exceeded':
-                    return 'Storage quota exceeded. Please check your Firebase plan.';
-                default:
-                     return `${friendlyMessage}. Please check the console for more details.`;
-            }
-        }
-        return error.message || "An unknown Firebase error occurred.";
-    } else if (error instanceof Error) {
-        return error.message;
-    }
-    return "An unknown error occurred during upload.";
-}
-
 export default function ImageUploader({ 
     existingImageUrls = [], 
     onImageUrlsChange,
@@ -76,8 +50,8 @@ export default function ImageUploader({
         const uploadPromise = new Promise<string>((resolve, reject) => {
             uploadTask.on('state_changed',
                 (snapshot) => { 
-                  // In a real app, you might update a progress bar here.
-                  // For this implementation, we use it to confirm the connection is active.
+                  // This callback confirms the connection is active.
+                  // It's intentionally left blank as we only need to know it's firing.
                  },
                 (error) => reject(error),
                 async () => {
@@ -92,7 +66,7 @@ export default function ImageUploader({
         });
 
         const timeoutPromise = new Promise<string>((_, reject) =>
-            setTimeout(() => reject(new Error('Connection timed out after 5 seconds. Please check your network.')), 5000)
+            setTimeout(() => reject(new Error('Connection timed out after 5 seconds. Please check your network configuration (firewall, proxy).')), 5000)
         );
 
         const downloadURL = await Promise.race([uploadPromise, timeoutPromise]);
@@ -102,15 +76,21 @@ export default function ImageUploader({
           title: 'Upload Successful',
           description: `${file.name} has been uploaded.`,
         });
-      } catch (error) {
-        uploadTask.cancel(); // Clean up the upload task if the race fails (timeout or real error)
-        const errorMessage = getFirebaseErrorMessage(error);
-        console.error(`Caught upload error for ${file.name}:`, error);
+      } catch (error: any) {
+        uploadTask.cancel();
+        
+        // Log the raw error object for maximum diagnostic information.
+        console.error(`Upload failed for ${file.name}. Raw error object:`, error);
+        
+        // Display a more direct and technical error message.
+        const errorMessage = error.message || 'An unknown error occurred. Check the browser console for details.';
+        
         toast({
           variant: 'destructive',
           title: `Upload Failed: ${file.name}`,
           description: errorMessage,
         });
+
         // Stop the entire upload process if one file fails
         setIsUploading(false);
         onUploadStateChange(false);
