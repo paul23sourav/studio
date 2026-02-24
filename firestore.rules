@@ -1,18 +1,26 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    //
+    // ACCESS CONTROL FUNCTIONS
+    //
     function isAuth() {
       return request.auth != null;
     }
 
+    // The isDevAdmin function grants admin rights to specific developer accounts.
     function isDevAdmin() {
       return isAuth() && (request.auth.token.email == 'paulspshubham94@gmail.com' || request.auth.token.email == 'paul23sourav@gmail.com');
     }
 
+    // The isAdmin function checks for either a custom 'admin' claim or if the user is a dev admin.
     function isAdmin() {
       return isAuth() && (request.auth.token.admin == true || isDevAdmin());
     }
 
+    //
+    // COLLECTION RULES
+    //
     match /users/{userId} {
       allow read, write: if isAuth() && request.auth.uid == userId;
     }

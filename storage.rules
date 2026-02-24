@@ -3,10 +3,12 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     
+    // The isDevAdmin function grants admin rights to specific developer accounts.
     function isDevAdmin() {
       return request.auth != null && (request.auth.token.email == 'paulspshubham94@gmail.com' || request.auth.token.email == 'paul23sourav@gmail.com');
     }
     
+    // The isAdmin function checks for either a custom 'admin' claim or if the user is a dev admin.
     function isAdmin() {
       return request.auth != null && (request.auth.token.admin == true || isDevAdmin());
     }
