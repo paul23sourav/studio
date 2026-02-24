@@ -9,12 +9,9 @@ service firebase.storage {
     }
 
     // Admins can create, update, and delete product images.
+    // This rule is temporarily loosened for debugging.
     match /products/{imageName} {
-      allow create, update, delete: if request.auth != null && (
-        request.auth.token.admin == true ||
-        request.auth.token.email == 'paulspshubham94@gmail.com' ||
-        request.auth.token.email == 'paul23sourav@gmail.com'
-      );
+      allow write: if request.auth != null;
     }
   }
 }
