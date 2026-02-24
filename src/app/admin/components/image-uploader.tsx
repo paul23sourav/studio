@@ -11,6 +11,33 @@ import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 
+function getFirebaseStorageErrorMessage(error: any): string {
+    switch (error.code) {
+        case 'storage/unauthorized':
+            return "Permission Denied: You do not have permission to upload files. Please ensure you are logged in as an admin and that your Storage Security Rules are correctly published in the Firebase Console.";
+        case 'storage/object-not-found':
+            return "File Not Found: The file may have been moved or deleted.";
+        case 'storage/bucket-not-found':
+            return "Storage Bucket Not Found: Please ensure Firebase Storage is set up correctly in your project.";
+        case 'storage/project-not-found':
+            return "Firebase Project Not Found: Please check your Firebase configuration.";
+        case 'storage/quota-exceeded':
+            return "Storage Quota Exceeded: Please upgrade your storage plan or free up space.";
+        case 'storage/unauthenticated':
+            return "User Not Authenticated: Please log in to upload files.";
+        case 'storage/canceled':
+            return "Upload Canceled.";
+        case 'storage/retry-limit-exceeded':
+             return "Connection Timed Out: The network connection has been lost. Please check your internet connection and firewall settings.";
+        case 'storage/invalid-url':
+            return "Invalid URL: The URL for the file is malformed.";
+        case 'storage/unknown':
+            return "An unknown error occurred. This is often due to a CORS configuration issue. Please verify that your Storage bucket's CORS policy is set correctly in the Google Cloud Console to allow requests from your app's domain.";
+        default:
+            return error.message || "An unexpected error occurred during upload. Please check the browser console for more details.";
+    }
+}
+
 export default function ImageUploader({ 
     existingImageUrls = [], 
     onImageUrlsChange,
@@ -30,82 +57,72 @@ export default function ImageUploader({
     setIsUploading(true);
     onUploadStateChange(true);
 
-    const uploadedUrls: string[] = [];
+    const uploadPromises = acceptedFiles.map(file => {
+      return new Promise<string>((resolve, reject) => {
+        const uniqueId = uuidv4();
+        const fileExtension = file.name.split('.').pop();
+        const fileName = `${uniqueId}.${fileExtension}`;
+        const filePath = `products/${fileName}`;
+        const storageRef = ref(storage, filePath);
+        const uploadTask = uploadBytesResumable(storageRef, file);
 
-    for (const file of acceptedFiles) {
-      const uniqueId = uuidv4();
-      const fileExtension = file.name.split('.').pop();
-      const fileName = `${uniqueId}.${fileExtension}`;
-      const filePath = `products/${fileName}`;
-      
-      const storageRef = ref(storage, filePath);
-      const uploadTask = uploadBytesResumable(storageRef, file);
+        toast({
+          title: `Uploading ${file.name}...`,
+          description: 'Your upload has started.',
+        });
 
-      toast({
-        title: `Uploading ${file.name}...`,
-        description: 'Establishing connection...',
+        uploadTask.on('state_changed',
+          (snapshot) => {
+            // Optional: Can be used to show upload progress
+          },
+          (error) => {
+            // This is the new, robust error handler
+            console.error(`Upload failed for ${file.name}:`, error);
+            const friendlyMessage = getFirebaseStorageErrorMessage(error);
+            toast({
+              variant: 'destructive',
+              title: `Upload Failed: ${file.name}`,
+              description: friendlyMessage,
+              duration: 10000, // Give user more time to read the detailed error
+            });
+            reject(error);
+          },
+          async () => {
+            // Upload completed successfully
+            try {
+              const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+              toast({
+                title: 'Upload Successful',
+                description: `${file.name} has been uploaded.`,
+              });
+              resolve(downloadURL);
+            } catch (error) {
+              console.error(`Failed to get download URL for ${file.name}:`, error);
+              const friendlyMessage = getFirebaseStorageErrorMessage(error);
+               toast({
+                variant: 'destructive',
+                title: `Could Not Get URL for ${file.name}`,
+                description: friendlyMessage,
+                duration: 10000,
+              });
+              reject(error);
+            }
+          }
+        );
       });
+    });
 
-      try {
-        const downloadURL = await new Promise<string>((resolve, reject) => {
-            const timeoutId = setTimeout(() => {
-                reject(new Error("Connection timed out after 5 seconds. This is likely due to a CORS or project billing issue. Please check your storage bucket's CORS configuration."));
-            }, 5000);
-
-            uploadTask.on('state_changed',
-                (snapshot) => {
-                    // Progress event means connection is active. Clear the timeout.
-                    clearTimeout(timeoutId);
-                },
-                (error) => {
-                    clearTimeout(timeoutId);
-                    reject(error);
-                },
-                async () => {
-                    clearTimeout(timeoutId);
-                    try {
-                        const url = await getDownloadURL(uploadTask.snapshot.ref);
-                        resolve(url);
-                    } catch (e) {
-                        reject(e);
-                    }
-                }
-            );
-        });
-
-        uploadedUrls.push(downloadURL);
-        toast({
-          title: 'Upload Successful',
-          description: `${file.name} has been uploaded.`,
-        });
-
-      } catch (error: any) {
-        uploadTask.cancel(); // Important: clean up the upload task on error
-        
-        console.error(`Upload failed for ${file.name}. Raw error object:`, error);
-        
-        const errorMessage = error.message || 'An unknown error occurred. Check the browser console for details.';
-        
-        toast({
-          variant: 'destructive',
-          title: `Upload Failed: ${file.name}`,
-          description: errorMessage,
-        });
-
-        // Stop the entire upload process if one file fails
-        setIsUploading(false);
-        onUploadStateChange(false);
-        return;
-      }
-    }
-
-    if (uploadedUrls.length > 0) {
+    try {
+      const uploadedUrls = await Promise.all(uploadPromises);
       onImageUrlsChange(prevUrls => [...prevUrls, ...uploadedUrls]);
+    } catch (error) {
+      // Individual error toasts are shown inside the promise.
+      // This catch block prevents an unhandled promise rejection error.
+      console.log("One or more uploads failed. See previous logs for details.");
+    } finally {
+      setIsUploading(false);
+      onUploadStateChange(false);
     }
-
-    setIsUploading(false);
-    onUploadStateChange(false);
-
   }, [storage, isUploading, onImageUrlsChange, onUploadStateChange, toast]);
 
 
