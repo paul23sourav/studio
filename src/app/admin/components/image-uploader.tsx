@@ -49,18 +49,14 @@ export default function ImageUploader({ existingImageUrls = [], onImageUrlsChang
     const newUploads: Upload[] = acceptedFiles.map(file => ({ id: uuidv4(), file, progress: 0 }));
     setUploads(newUploads);
     
-    const uploadedUrls: string[] = [];
-    let hadError = false;
-
-    for (const upload of newUploads) {
-      try {
+    const uploadPromises = newUploads.map(upload => {
         const uniqueId = uuidv4();
         const nameParts = upload.file.name.split('.');
         const fileExtension = nameParts.length > 1 ? `.${nameParts.pop()}` : '';
         const fileName = `${uniqueId}${fileExtension}`;
         const filePath = `products/${fileName}`;
         
-        const url = await uploadFile(storage, upload.file, filePath, (progress) => {
+        return uploadFile(storage, upload.file, filePath, (progress) => {
             setUploads(prev => 
                 prev.map(u => 
                     u.id === upload.id
@@ -69,27 +65,30 @@ export default function ImageUploader({ existingImageUrls = [], onImageUrlsChang
                 )
             );
         });
-        uploadedUrls.push(url);
-      } catch(error) {
-        hadError = true;
-        console.error(`Upload failed for ${upload.file.name}:`, error);
-      }
-    }
+    });
+
+    const results = await Promise.allSettled(uploadPromises);
+
+    const successfulUrls = results
+        .filter((res): res is PromiseFulfilledResult<string> => res.status === 'fulfilled')
+        .map(res => res.value);
     
-    if (uploadedUrls.length > 0) {
-        onImageUrlsChange(prevUrls => [...prevUrls, ...uploadedUrls]);
+    const failedCount = results.length - successfulUrls.length;
+
+    if (successfulUrls.length > 0) {
+        onImageUrlsChange(prevUrls => [...prevUrls, ...successfulUrls]);
     }
 
-    if (hadError) {
+    if (failedCount > 0) {
         toast({
             variant: 'destructive',
             title: 'Upload issue',
-            description: `Some images failed to upload. ${uploadedUrls.length} succeeded.`,
+            description: `${failedCount} image(s) failed to upload. ${successfulUrls.length} succeeded.`,
         });
-    } else {
-         toast({
+    } else if (successfulUrls.length > 0) {
+        toast({
             title: 'Images uploaded',
-            description: `${uploadedUrls.length} image(s) have been successfully uploaded.`,
+            description: `${successfulUrls.length} image(s) have been successfully uploaded.`,
         });
     }
    
