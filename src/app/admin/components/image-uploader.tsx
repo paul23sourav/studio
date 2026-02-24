@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 
 interface Upload {
-  id: string; // Use an ID for reliable progress tracking
+  id: string;
   file: File;
   progress: number;
 }
@@ -49,47 +49,53 @@ export default function ImageUploader({ existingImageUrls = [], onImageUrlsChang
     const newUploads: Upload[] = acceptedFiles.map(file => ({ id: uuidv4(), file, progress: 0 }));
     setUploads(newUploads);
     
-    const uploadPromises = newUploads.map(async (upload) => {
+    const uploadedUrls: string[] = [];
+    let hadError = false;
+
+    for (const upload of newUploads) {
+      try {
         const uniqueId = uuidv4();
         const nameParts = upload.file.name.split('.');
-        const fileExtension = nameParts.length > 1 ? nameParts.pop() : '';
-        const fileName = `${uniqueId}${fileExtension ? `.${fileExtension}` : ''}`;
+        const fileExtension = nameParts.length > 1 ? `.${nameParts.pop()}` : '';
+        const fileName = `${uniqueId}${fileExtension}`;
         const filePath = `products/${fileName}`;
-
-        try {
-            const url = await uploadFile(storage, upload.file, filePath, (p) => {
-                setUploads(prev => 
-                    prev.map(u => 
-                        u.id === upload.id
-                        ? {...u, progress: p} 
-                        : u
-                    )
-                );
-            });
-            return url;
-        } catch (error) {
-            throw error;
-        }
-    });
-
-    try {
-        const newUrls = await Promise.all(uploadPromises);
-        onImageUrlsChange(prevUrls => [...prevUrls, ...newUrls]);
-        toast({
-            title: 'Images uploaded',
-            description: `${newUrls.length} image(s) have been successfully uploaded.`,
+        
+        const url = await uploadFile(storage, upload.file, filePath, (progress) => {
+            setUploads(prev => 
+                prev.map(u => 
+                    u.id === upload.id
+                    ? {...u, progress } 
+                    : u
+                )
+            );
         });
-    } catch (error) {
-        console.error("Upload failed:", error);
+        uploadedUrls.push(url);
+      } catch(error) {
+        hadError = true;
+        console.error(`Upload failed for ${upload.file.name}:`, error);
+      }
+    }
+    
+    if (uploadedUrls.length > 0) {
+        onImageUrlsChange(prevUrls => [...prevUrls, ...uploadedUrls]);
+    }
+
+    if (hadError) {
         toast({
             variant: 'destructive',
-            title: 'Upload failed',
-            description: 'There was a problem uploading one or more images. Please check permissions and try again.',
+            title: 'Upload issue',
+            description: `Some images failed to upload. ${uploadedUrls.length} succeeded.`,
         });
-    } finally {
-        setIsUploading(false);
-        setUploads([]);
+    } else {
+         toast({
+            title: 'Images uploaded',
+            description: `${uploadedUrls.length} image(s) have been successfully uploaded.`,
+        });
     }
+   
+    setIsUploading(false);
+    setUploads([]);
+
   }, [storage, onImageUrlsChange, toast]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
