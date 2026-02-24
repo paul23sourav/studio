@@ -1,42 +1,17 @@
 rules_version = '2';
-
 service firebase.storage {
   match /b/{bucket}/o {
-
-    //
-    // ACCESS CONTROL FUNCTIONS
-    //
-    function isAuth() {
-      return request.auth != null;
-    }
-
-    // The isDevAdmin function grants admin rights to specific developer accounts.
-    function isDevAdmin() {
-      return isAuth() && (request.auth.token.email == 'paulspshubham94@gmail.com' || request.auth.token.email == 'paul23sourav@gmail.com');
-    }
-
-    // The isAdmin function checks for either a custom 'admin' claim or if the user is a dev admin.
-    function isAdmin() {
-      return isAuth() && (request.auth.token.admin == true || isDevAdmin());
-    }
-
-    // These rules control access to the 'products' folder.
+    // Match any file in the 'products' directory
     match /products/{imageName} {
       // Allow anyone to read product images.
-      // This is required for the public e-commerce storefront.
+      // This is necessary for the public storefront to display product pictures.
       allow read: if true;
 
-      // Allow creating/uploading files only if the user is an admin.
-      // This also enforces a 5MB file size limit and image-only content types.
-      allow create: if isAdmin() &&
-                       request.resource.size < 5 * 1024 * 1024 &&
-                       request.resource.contentType.matches('image/.*');
-
-      // Allow deleting files only if the user is an admin.
-      allow delete: if isAdmin();
-
-      // Disallow updating file metadata for security.
-      allow update: if false;
+      // Allow write (create, update, delete) operations only for authenticated admins.
+      // This rule also enforces that uploaded files are images and are less than 5MB.
+      allow write: if request.auth != null && request.auth.token.admin == true &&
+                      request.resource.size < 5 * 1024 * 1024 &&
+                      request.resource.contentType.matches('image/.*');
     }
   }
 }
