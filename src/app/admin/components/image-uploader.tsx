@@ -48,65 +48,43 @@ export default function ImageUploader({
     setIsUploading(true);
     onUploadStateChange(true);
 
-    let successCount = 0;
-    let errorCount = 0;
-    
-    const uploadPromises = acceptedFiles.map(file => {
-        const uniqueId = uuidv4();
-        const fileExtension = file.name.split('.').pop();
-        const fileName = `${uniqueId}.${fileExtension}`;
-        const filePath = `products/${fileName}`;
-        return uploadFile(storage, file, filePath);
-    });
+    const uploadedUrls: string[] = [];
 
-    try {
-        const results = await Promise.allSettled(uploadPromises);
+    for (const file of acceptedFiles) {
+      const uniqueId = uuidv4();
+      const fileExtension = file.name.split('.').pop();
+      const fileName = `${uniqueId}.${fileExtension}`;
+      const filePath = `products/${fileName}`;
+      
+      toast({
+        title: `Uploading ${file.name}...`,
+        description: 'Please wait.',
+      });
 
-        const newImageUrls: string[] = [];
-        results.forEach((result, index) => {
-            if (result.status === 'fulfilled') {
-                newImageUrls.push(result.value);
-                successCount++;
-            } else {
-                errorCount++;
-                const fileName = acceptedFiles[index].name;
-                const errorMessage = getFirebaseErrorMessage(result.reason);
-                console.error(`Failed to upload ${fileName}:`, result.reason);
-                toast({
-                    variant: "destructive",
-                    title: `Upload Failed: ${fileName}`,
-                    description: errorMessage,
-                });
-            }
-        });
-
-        if (newImageUrls.length > 0) {
-            onImageUrlsChange(prevUrls => [...prevUrls, ...newImageUrls]);
-        }
-
-    } catch (error) {
-        console.error("An unexpected error occurred during the upload process:", error);
+      try {
+        const downloadURL = await uploadFile(storage, file, filePath);
+        uploadedUrls.push(downloadURL);
         toast({
-            variant: "destructive",
-            title: "Upload Process Error",
-            description: "An unexpected error occurred. Please check the console.",
+          title: 'Upload Successful',
+          description: `${file.name} has been uploaded.`,
         });
-    } finally {
-        if (errorCount > 0) {
-           toast({
-                title: "Upload Complete",
-                description: `${successCount} file(s) uploaded successfully, ${errorCount} failed.`,
-            });
-        } else if (successCount > 0) {
-            toast({
-                title: "Upload Successful",
-                description: `All ${successCount} file(s) have been uploaded.`,
-            });
-        }
-
-        setIsUploading(false);
-        onUploadStateChange(false);
+      } catch (error) {
+        const errorMessage = getFirebaseErrorMessage(error);
+        console.error(`Failed to upload ${file.name}:`, error);
+        toast({
+          variant: 'destructive',
+          title: `Upload Failed: ${file.name}`,
+          description: errorMessage,
+        });
+      }
     }
+
+    if (uploadedUrls.length > 0) {
+      onImageUrlsChange(prevUrls => [...prevUrls, ...uploadedUrls]);
+    }
+
+    setIsUploading(false);
+    onUploadStateChange(false);
 
   }, [storage, isUploading, onImageUrlsChange, onUploadStateChange, toast]);
 
