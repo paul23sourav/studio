@@ -1,6 +1,6 @@
 'use client';
 
-import { GoogleAuthProvider, signInWithPopup, getAdditionalUserInfo, UserCredential } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, getAdditionalUserInfo } from 'firebase/auth';
 import { useAuth, useFirestore } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
@@ -17,21 +17,15 @@ const GoogleIcon = () => (
 
 function getFriendlyAuthErrorMessage(errorCode?: string): string {
     switch (errorCode) {
-        case 'auth/invalid-email':
-            return 'Please enter a valid email address.';
-        case 'auth/user-not-found':
-        case 'auth/wrong-password':
-        case 'auth/invalid-credential':
-            return 'Invalid email or password. Please try again.';
-        case 'auth/email-already-in-use':
-            return 'An account with this email address already exists. Please log in.';
-        case 'auth/weak-password':
-            return 'The password is too weak. Please use at least 6 characters.';
-        case 'auth/too-many-requests':
-            return 'Access to this account has been temporarily disabled. Please reset your password or try again later.';
+        // These are user-cancelled actions, not true errors.
+        // Return an empty string to prevent showing a disruptive toast.
         case 'auth/popup-closed-by-user':
         case 'auth/cancelled-popup-request':
-            return 'The sign-in window was closed. Please try again.';
+            return '';
+        case 'auth/invalid-credential':
+            return 'Invalid credentials. Please try again.';
+        case 'auth/too-many-requests':
+            return 'Access to this account has been temporarily disabled due to many failed login attempts. Please try again later.';
         default:
             return 'An unexpected error occurred during sign-in. Please try again.';
     }
@@ -86,7 +80,8 @@ export function GoogleAuthButton() {
                         description: 'Your account was created, but we failed to save your profile. Please try again.'
                     });
 
-                    await user.delete();
+                    // Attempt to clean up the orphaned user from Firebase Auth
+                    await user.delete().catch(e => console.error("Failed to delete orphaned user:", e));
                     return;
                 }
             }
@@ -101,11 +96,16 @@ export function GoogleAuthButton() {
             console.error('Google Sign-In Authentication Error:', authError);
             
             const errorMessage = getFriendlyAuthErrorMessage(authError.code);
-            toast({
-                variant: 'destructive',
-                title: 'Sign-in failed',
-                description: errorMessage
-            });
+            
+            // Only show a toast if there is an actual error message to display.
+            // This prevents a toast for user-cancelled popups.
+            if (errorMessage) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Sign-in failed',
+                    description: errorMessage
+                });
+            }
         }
     };
 
