@@ -12,17 +12,25 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 
 function getFirebaseErrorMessage(error: any): string {
-    if (error && typeof error === 'object' && 'code' in error) {
-        switch (error.code) {
-            case 'storage/unauthorized':
-                return "Permission Denied: Check your storage rules in the Firebase console.";
-            case 'storage/canceled':
-                return "Upload canceled.";
-            case 'storage/unknown':
-                return 'An unknown error occurred.';
-            default:
-                return error.message || "An unknown Firebase Storage error occurred.";
+    if (error && typeof error === 'object' && 'code' in error && typeof error.code === 'string') {
+        if (error.code.startsWith('storage/')) {
+            const code = error.code.split('/')[1];
+            const friendlyMessage = code.charAt(0).toUpperCase() + code.slice(1).replace(/-/g, ' ');
+
+            switch(code) {
+                case 'unauthorized':
+                    return `Unauthorized: You do not have permission to upload files. Please check Storage Rules in Firebase.`;
+                case 'unauthenticated':
+                    return `Unauthenticated: Your session may have expired. Please try logging out and back in.`;
+                case 'canceled':
+                    return 'The upload was canceled.';
+                case 'quota-exceeded':
+                    return 'Storage quota exceeded. Please check your Firebase plan.';
+                default:
+                     return `${friendlyMessage}. Please check the console for more details.`;
+            }
         }
+        return error.message || "An unknown Firebase error occurred.";
     } else if (error instanceof Error) {
         return error.message;
     }
