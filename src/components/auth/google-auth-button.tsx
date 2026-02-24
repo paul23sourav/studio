@@ -1,6 +1,6 @@
 'use client';
 
-import { GoogleAuthProvider, signInWithPopup, getAdditionalUserInfo } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, getAdditionalUserInfo, UserCredential } from 'firebase/auth';
 import { useAuth, useFirestore } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
@@ -61,14 +61,34 @@ export function GoogleAuthButton() {
             const additionalInfo = getAdditionalUserInfo(result);
 
             if (additionalInfo?.isNewUser) {
-                const userProfileData = {
-                    uid: user.uid,
-                    email: user.email,
-                    displayName: user.displayName,
-                    photoURL: user.photoURL,
-                };
-                const userDocRef = doc(firestore, 'users', user.uid);
-                await setDoc(userDocRef, userProfileData, { merge: true });
+                try {
+                    const userProfileData = {
+                        uid: user.uid,
+                        email: user.email,
+                        displayName: user.displayName || user.email?.split('@')[0] || 'New User',
+                        photoURL: user.photoURL,
+                    };
+                    const userDocRef = doc(firestore, 'users', user.uid);
+                    await setDoc(userDocRef, userProfileData, { merge: true });
+                } catch (dbError) {
+                    console.error('Firestore profile creation error:', dbError);
+                    
+                    const permissionError = new FirestorePermissionError({
+                        path: `users/${user.uid}`,
+                        operation: 'create',
+                        requestResourceData: { note: 'Google sign-in profile creation' },
+                    });
+                    errorEmitter.emit('permission-error', permissionError);
+
+                    toast({
+                        variant: 'destructive',
+                        title: 'Sign-in failed',
+                        description: 'Your account was created, but we failed to save your profile. Please try again.'
+                    });
+
+                    await user.delete();
+                    return;
+                }
             }
             
             toast({
@@ -77,38 +97,15 @@ export function GoogleAuthButton() {
             });
             router.push('/');
 
-        } catch (error: any) {
-            console.error('Google Sign-In Error:', error);
-            const currentUser = auth.currentUser;
-
-            if (error.code && error.code.startsWith('auth/')) {
-                // This is an authentication error (e.g., popup closed)
-                const errorMessage = getFriendlyAuthErrorMessage(error.code);
-                toast({
-                    variant: 'destructive',
-                    title: 'Sign-in failed',
-                    description: errorMessage
-                });
-            } else {
-                // This is likely a Firestore error from setDoc during new user creation
-                const permissionError = new FirestorePermissionError({
-                    path: currentUser ? `users/${currentUser.uid}` : '/users/unknown',
-                    operation: 'create',
-                    requestResourceData: { note: 'Google sign-in profile creation' },
-                });
-                errorEmitter.emit('permission-error', permissionError);
-
-                toast({
-                    variant: 'destructive',
-                    title: 'Sign-in failed',
-                    description: 'Your account was created, but we failed to save your profile. Please try again.'
-                });
-
-                // Attempt to clean up the orphaned user from Firebase Auth
-                if (currentUser) {
-                    await currentUser.delete();
-                }
-            }
+        } catch (authError: any) {
+            console.error('Google Sign-In Authentication Error:', authError);
+            
+            const errorMessage = getFriendlyAuthErrorMessage(authError.code);
+            toast({
+                variant: 'destructive',
+                title: 'Sign-in failed',
+                description: errorMessage
+            });
         }
     };
 

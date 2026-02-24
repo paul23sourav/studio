@@ -95,53 +95,53 @@ export function EmailAuthForm({ mode }: EmailAuthFormProps) {
         }
 
         // Signup mode
+        let userCredential;
         try {
-            const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-            const user = userCredential.user;
+            userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+        } catch (authError: any) {
+            console.error(`Signup auth error:`, authError);
+            const errorMessage = getFriendlyAuthErrorMessage(authError.code);
+            toast({
+                variant: 'destructive',
+                title: 'Sign up failed',
+                description: errorMessage
+            });
+            setLoading(false);
+            return;
+        }
 
+        const user = userCredential.user;
+        try {
             const userProfileData = {
                 uid: user.uid,
                 email: user.email,
-                displayName: user.email,
+                displayName: user.email?.split('@')[0] || 'New User',
                 photoURL: null,
             };
             const userDocRef = doc(firestore, 'users', user.uid);
-            
             await setDoc(userDocRef, userProfileData);
-            
+
             toast({ title: 'Account created successfully!' });
             router.push('/');
 
-        } catch (error: any) {
-            console.error(`Signup error:`, error);
-            const currentUser = auth.currentUser;
+        } catch (dbError: any) {
+            console.error(`Signup DB error:`, dbError);
+            
+            const permissionError = new FirestorePermissionError({
+                path: `users/${user.uid}`,
+                operation: 'create',
+                requestResourceData: { note: 'Email sign-up profile creation' },
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            
+            toast({
+                variant: 'destructive',
+                title: 'Sign up failed',
+                description: 'Your account was created, but we could not save your user profile. Please try again.'
+            });
 
-            if (error.code && error.code.startsWith('auth/')) {
-                const errorMessage = getFriendlyAuthErrorMessage(error.code);
-                toast({
-                    variant: 'destructive',
-                    title: 'Sign up failed',
-                    description: errorMessage
-                });
-            } else {
-                // This is likely a Firestore error
-                const permissionError = new FirestorePermissionError({
-                    path: currentUser ? `users/${currentUser.uid}` : '/users/unknown',
-                    operation: 'create',
-                    requestResourceData: { note: 'Email sign-up profile creation' },
-                });
-                errorEmitter.emit('permission-error', permissionError);
-                toast({
-                    variant: 'destructive',
-                    title: 'Sign up failed',
-                    description: 'Could not save your user profile. Please try again.'
-                });
-
-                // Clean up the orphaned user
-                if (currentUser) {
-                    await currentUser.delete();
-                }
-            }
+            // Clean up the orphaned user
+            await user.delete();
         } finally {
             setLoading(false);
         }
