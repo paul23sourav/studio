@@ -16,8 +16,8 @@ export const PaulLogo = ({ className, ...props }: React.SVGProps<SVGSVGElement>)
       textAnchor="middle"
       fontFamily="'Inter', sans-serif"
       fontSize="26"
-      fontWeight="600"
-      letterSpacing="0.25em"
+      fontWeight="800"
+      letterSpacing="0.1em"
     >
       PAUL
     </text>

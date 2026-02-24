@@ -74,7 +74,7 @@ export function Header() {
       isScrolled && "border-b-border"
     )}>
       <div className="container flex h-16 items-center justify-between px-4 md:px-6">
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4">
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="outline" size="icon" className="shrink-0 md:hidden">
@@ -117,7 +117,7 @@ export function Header() {
             </SheetContent>
           </Sheet>
           
-          <Link href="/" className="hidden md:flex items-center">
+          <Link href="/" className="flex items-center">
              <PaulLogo />
           </Link>
 

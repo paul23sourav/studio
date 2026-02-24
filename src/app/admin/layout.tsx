@@ -43,7 +43,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between">
             <PaulLogo className="w-auto h-7" />
             <SidebarTrigger />
           </div>
