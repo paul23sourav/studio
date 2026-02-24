@@ -66,35 +66,24 @@ export default function ImageUploader({
         const storageRef = ref(storage, filePath);
         const uploadTask = uploadBytesResumable(storageRef, file);
 
-        toast({
-          title: `Uploading ${file.name}...`,
-          description: 'Your upload has started.',
-        });
-
         uploadTask.on('state_changed',
-          (snapshot) => {
-            // Optional: Can be used to show upload progress
-          },
+          (snapshot) => { /* Optional: Handle progress */ },
           (error) => {
-            // This is the new, robust error handler
+            // This is the Firebase SDK's error handler
             console.error(`Upload failed for ${file.name}:`, error);
             const friendlyMessage = getFirebaseStorageErrorMessage(error);
             toast({
               variant: 'destructive',
               title: `Upload Failed: ${file.name}`,
               description: friendlyMessage,
-              duration: 10000, // Give user more time to read the detailed error
+              duration: 10000,
             });
-            reject(error);
+            reject(new Error(friendlyMessage));
           },
           async () => {
             // Upload completed successfully
             try {
               const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-              toast({
-                title: 'Upload Successful',
-                description: `${file.name} has been uploaded.`,
-              });
               resolve(downloadURL);
             } catch (error) {
               console.error(`Failed to get download URL for ${file.name}:`, error);
@@ -105,20 +94,40 @@ export default function ImageUploader({
                 description: friendlyMessage,
                 duration: 10000,
               });
-              reject(error);
+              reject(new Error(friendlyMessage));
             }
           }
         );
       });
     });
 
+    const allUploadsPromise = Promise.all(uploadPromises);
+
+    const timeoutPromise = new Promise<string[]>((_, reject) =>
+      setTimeout(() => {
+        reject(new Error('Upload timed out after 15 seconds. This is most likely due to a CORS configuration issue on your Cloud Storage bucket.'));
+      }, 15000)
+    );
+
     try {
-      const uploadedUrls = await Promise.all(uploadPromises);
+      toast({
+        title: `Uploading ${acceptedFiles.length} file(s)...`,
+        description: 'Your upload has started.',
+      });
+      const uploadedUrls = await Promise.race([allUploadsPromise, timeoutPromise]);
       onImageUrlsChange(prevUrls => [...prevUrls, ...uploadedUrls]);
-    } catch (error) {
-      // Individual error toasts are shown inside the promise.
-      // This catch block prevents an unhandled promise rejection error.
-      console.log("One or more uploads failed. See previous logs for details.");
+      toast({
+        title: 'Upload Successful',
+        description: `${acceptedFiles.length} file(s) have been uploaded.`,
+      });
+    } catch (error: any) {
+      console.error("Upload process failed:", error);
+      toast({
+        variant: 'destructive',
+        title: 'Upload Failed',
+        description: error.message || 'An unexpected error occurred.',
+        duration: 10000
+      });
     } finally {
       setIsUploading(false);
       onUploadStateChange(false);
