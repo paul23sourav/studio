@@ -38,23 +38,31 @@ export default function ImageUploader({
       const fileName = `${uniqueId}.${fileExtension}`;
       const filePath = `products/${fileName}`;
       
+      const storageRef = ref(storage, filePath);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+
       toast({
         title: `Uploading ${file.name}...`,
         description: 'Establishing connection...',
       });
 
-      const storageRef = ref(storage, filePath);
-      const uploadTask = uploadBytesResumable(storageRef, file);
-
       try {
-        const uploadPromise = new Promise<string>((resolve, reject) => {
+        const downloadURL = await new Promise<string>((resolve, reject) => {
+            const timeoutId = setTimeout(() => {
+                reject(new Error("Connection timed out after 5 seconds. This is likely due to a CORS or project billing issue. Please check your storage bucket's CORS configuration."));
+            }, 5000);
+
             uploadTask.on('state_changed',
-                (snapshot) => { 
-                  // This callback confirms the connection is active.
-                  // It's intentionally left blank as we only need to know it's firing.
-                 },
-                (error) => reject(error),
+                (snapshot) => {
+                    // Progress event means connection is active. Clear the timeout.
+                    clearTimeout(timeoutId);
+                },
+                (error) => {
+                    clearTimeout(timeoutId);
+                    reject(error);
+                },
                 async () => {
+                    clearTimeout(timeoutId);
                     try {
                         const url = await getDownloadURL(uploadTask.snapshot.ref);
                         resolve(url);
@@ -65,24 +73,17 @@ export default function ImageUploader({
             );
         });
 
-        const timeoutPromise = new Promise<string>((_, reject) =>
-            setTimeout(() => reject(new Error('Connection timed out after 5 seconds. This may be due to a network issue or a Google Cloud project configuration problem. Please ensure the Firebase Storage API is enabled and a billing account is linked to your project in the Google Cloud Console.')), 5000)
-        );
-
-        const downloadURL = await Promise.race([uploadPromise, timeoutPromise]);
-
         uploadedUrls.push(downloadURL);
         toast({
           title: 'Upload Successful',
           description: `${file.name} has been uploaded.`,
         });
+
       } catch (error: any) {
-        uploadTask.cancel();
+        uploadTask.cancel(); // Important: clean up the upload task on error
         
-        // Log the raw error object for maximum diagnostic information.
         console.error(`Upload failed for ${file.name}. Raw error object:`, error);
         
-        // Display a more direct and technical error message.
         const errorMessage = error.message || 'An unknown error occurred. Check the browser console for details.';
         
         toast({
@@ -94,7 +95,7 @@ export default function ImageUploader({
         // Stop the entire upload process if one file fails
         setIsUploading(false);
         onUploadStateChange(false);
-        return; // Exit the loop
+        return;
       }
     }
 
