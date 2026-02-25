@@ -153,10 +153,18 @@ export default function AccountPage() {
               disabled={isSaving}
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" defaultValue={user?.email || ""} readOnly />
-          </div>
+          {user?.email && (
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" value={user.email} readOnly />
+            </div>
+          )}
+          {user?.phoneNumber && (
+             <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input id="phone" type="tel" value={user.phoneNumber} readOnly />
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="currency">Currency</Label>
             <Select value={currency} onValueChange={(value) => setCurrency(value as 'USD' | 'INR')} disabled={isSaving}>

@@ -22,9 +22,13 @@
           "type": "string",
           "format": "uri",
           "description": "URL of the user's profile picture."
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "The user's phone number."
         }
       },
-      "required": ["uid", "email"]
+      "required": ["uid"]
     },
     "Product": {
       "title": "Product",
@@ -111,7 +115,7 @@
   },
   "auth": {
     "providers": [
-      "google.com",
+      "phone",
       "password"
     ]
   },
