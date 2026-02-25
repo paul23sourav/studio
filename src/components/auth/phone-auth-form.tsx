@@ -48,26 +48,33 @@ export function PhoneAuthForm() {
   const [loading, setLoading] = useState(false);
   const [isOtpSent, setIsOtpSent] = useState(false);
 
-  const setupRecaptcha = () => {
+  useEffect(() => {
     if (!auth) return;
-    // Hide reCAPTCHA badge by default
-    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-      'size': 'invisible',
-      'callback': (response: any) => {
-        // reCAPTCHA solved, allow signInWithPhoneNumber.
-      },
-    });
-  };
+
+    if (!window.recaptchaVerifier) {
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+            'size': 'invisible',
+            'callback': () => {
+                // reCAPTCHA solved, allow signInWithPhoneNumber.
+            }
+        });
+    }
+
+    return () => {
+        window.recaptchaVerifier?.clear();
+        (window as { recaptchaVerifier?: RecaptchaVerifier }).recaptchaVerifier = undefined;
+    };
+  }, [auth]);
+
 
   const onSendOtp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!auth || !firestore) {
+    if (!auth || !firestore || !window.recaptchaVerifier) {
       toast({ variant: 'destructive', title: 'Firebase not initialized.' });
       return;
     }
     setLoading(true);
-    setupRecaptcha();
-    const appVerifier = window.recaptchaVerifier!;
+    const appVerifier = window.recaptchaVerifier;
     
     try {
       const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
@@ -78,11 +85,6 @@ export function PhoneAuthForm() {
       console.error('OTP send error:', error);
       const errorMessage = getFriendlyPhoneAuthErrorMessage(error.code);
       toast({ variant: 'destructive', title: 'Failed to send OTP', description: errorMessage });
-      // Reset reCAPTCHA
-      window.recaptchaVerifier?.render().then((widgetId) => {
-        // @ts-ignore
-        grecaptcha.reset(widgetId);
-      });
     } finally {
       setLoading(false);
     }
