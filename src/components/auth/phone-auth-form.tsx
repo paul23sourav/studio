@@ -51,7 +51,7 @@ export function PhoneAuthForm() {
   useEffect(() => {
     if (!auth) return;
 
-    if (!window.recaptchaVerifier) {
+    if (!window.recaptchaVerifier && document.getElementById('recaptcha-container')) {
         window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
             'size': 'invisible',
             'callback': () => {
@@ -59,19 +59,21 @@ export function PhoneAuthForm() {
             }
         });
     }
-
-    return () => {
-        window.recaptchaVerifier?.clear();
-        (window as { recaptchaVerifier?: RecaptchaVerifier }).recaptchaVerifier = undefined;
-    };
+    // By not providing a cleanup function, the reCAPTCHA verifier will persist
+    // for the user's session, avoiding the unmount/cleanup race condition that
+    // causes the "Cannot read properties of null (reading 'style')" error.
   }, [auth]);
 
 
   const onSendOtp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!auth || !firestore || !window.recaptchaVerifier) {
+    if (!auth || !firestore ) {
       toast({ variant: 'destructive', title: 'Firebase not initialized.' });
       return;
+    }
+     if (!window.recaptchaVerifier) {
+        toast({ variant: 'destructive', title: 'reCAPTCHA not ready', description: 'Please wait a moment and try again.' });
+        return;
     }
     setLoading(true);
     const appVerifier = window.recaptchaVerifier;
@@ -85,6 +87,14 @@ export function PhoneAuthForm() {
       console.error('OTP send error:', error);
       const errorMessage = getFriendlyPhoneAuthErrorMessage(error.code);
       toast({ variant: 'destructive', title: 'Failed to send OTP', description: errorMessage });
+      
+      // Reset recaptcha on error to allow user to try again
+      // @ts-ignore
+      if (window.grecaptcha) {
+        // @ts-ignore
+        window.grecaptcha.reset();
+      }
+
     } finally {
       setLoading(false);
     }
