@@ -48,13 +48,6 @@ export function PhoneAuthForm() {
   const [loading, setLoading] = useState(false);
   const [isOtpSent, setIsOtpSent] = useState(false);
 
-  useEffect(() => {
-    return () => {
-      // Cleanup RecaptchaVerifier on component unmount
-      window.recaptchaVerifier?.clear();
-    };
-  }, []);
-
   const setupRecaptcha = () => {
     if (!auth) return;
     // Hide reCAPTCHA badge by default
